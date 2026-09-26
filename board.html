@@ -187,9 +187,6 @@ const BRIEF_FIELDS = [
   "Client Logo URL","Secondary Client Mark URL","Team Photography URL",
   "Arena / Background Image URL","Header / Hero Image URL","Texture / Background Asset URL"
 ];
-// Reference list only (no longer used to filter) -- these are the fields Card/Dossier rendering
-// reads by name. Compare view reads whatever columns exist + are described in Metric Config instead,
-// so new metrics never require a code change here.
 const PLAYER_FIELDS = [
   "Player ID","Name","Current Team","League","Country","Nationality","Age","Height",
   "Position","Secondary Position","Role","Archetype","PPG","RPG","APG","FG%",
@@ -198,9 +195,18 @@ const PLAYER_FIELDS = [
   "Film URL","Highlight URL","External Profile URL","Priority","Category"
 ];
 
-const METRIC_FORMATS = new Set(["PERCENT","DECIMAL","COUNT","FEET_INCHES","MEASUREMENT"]);
-const METRIC_DIRECTIONS = new Set(["HIGHER_IS_BETTER","LOWER_IS_BETTER","NEUTRAL"]);
-const CATEGORY_ORDER = ["PHYSICAL","ROLE / USAGE","SCORING","SHOOTING","PLAYMAKING","REBOUNDING","DEFENSE"];
+// Compare view's metric list is fixed here in code, on purpose -- it only ever uses columns
+// that already exist on every Players - Published tab today (Height, Age, PPG, RPG, APG, FG%).
+// No Google Sheet changes are required for Compare to work, on any existing or future report.
+const BUILT_IN_METRICS = [
+  { key:"Height", display:"HEIGHT", category:"PHYSICAL",   format:"FEET_INCHES", direction:"NEUTRAL" },
+  { key:"Age",    display:"AGE",    category:"PHYSICAL",   format:"DECIMAL",     direction:"NEUTRAL" },
+  { key:"PPG",    display:"PPG",    category:"SCORING",    format:"DECIMAL",     direction:"HIGHER_IS_BETTER" },
+  { key:"FG%",    display:"FG%",    category:"SHOOTING",   format:"PERCENT",     direction:"HIGHER_IS_BETTER" },
+  { key:"APG",    display:"APG",    category:"PLAYMAKING", format:"DECIMAL",     direction:"HIGHER_IS_BETTER" },
+  { key:"RPG",    display:"RPG",    category:"REBOUNDING", format:"DECIMAL",     direction:"HIGHER_IS_BETTER" }
+];
+const CATEGORY_ORDER = ["PHYSICAL","SCORING","SHOOTING","PLAYMAKING","REBOUNDING","DEFENSE"];
 
 const SILHOUETTE_PATH = "M50 8c8 0 14 6 14 14s-6 14-14 14-14-6-14-14 6-14 14-14zm-6 30h12c10 0 18 7 20 17l6 38-14 4-4-26-3 60h-9l-2-46-2 46h-9l-3-60-4 26-14-4 6-38c2-10 10-17 20-17z";
 function silhouetteSVG(cls){
@@ -212,10 +218,10 @@ function decodeBoardId(id){
   const padded = b64 + "===".slice((b64.length + 3) % 4);
   const raw = atob(padded);
   const parts = raw.split("|");
-  if(parts.length !== 3 && parts.length !== 4) throw new Error("Malformed board id");
-  const key = parts[0], briefGid = parts[1], playersGid = parts[2], metricsGid = parts[3] || null;
+  if(parts.length !== 3) throw new Error("Malformed board id");
+  const [key, briefGid, playersGid] = parts;
   if(!key || !briefGid || !playersGid) throw new Error("Malformed board id");
-  return { key, briefGid, playersGid, metricsGid };
+  return { key, briefGid, playersGid };
 }
 function csvUrl(key, gid){
   return `https://docs.google.com/spreadsheets/d/e/${key}/pub?gid=${gid}&single=true&output=csv`;
@@ -242,11 +248,6 @@ function parseBrief(rows){
   return brief;
 }
 
-// Keeps every column present on Players - Published, not just the fixed whitelist above.
-// Card/Dossier rendering still only ever reads the named fields it knows about; Compare view
-// uses whatever additional columns exist and are described in Metric Config. The real security
-// boundary is what Skyler chooses to formula-mirror onto the Published tab in Google Sheets --
-// that part is unchanged.
 function parsePlayers(rows){
   if(!rows.length) return [];
   const header = rows[0].map(function(h){ return String(h || "").trim(); });
@@ -257,36 +258,9 @@ function parsePlayers(rows){
     const obj = {};
     header.forEach(function(h, idx){ obj[h] = row[idx] !== undefined ? row[idx] : ""; });
     if(!obj["Name"]) continue;
-    out.push(obj);
-  }
-  return out;
-}
-
-function parseMetricConfig(rows){
-  if(!rows || !rows.length) return [];
-  const header = rows[0].map(function(h){ return String(h || "").trim(); });
-  const idx = {};
-  header.forEach(function(h, i){ idx[h] = i; });
-  const required = ["Metric Key","Display Name","Category","Format","Direction","Include in Heatmap"];
-  if(required.some(function(r){ return !(r in idx); })) return [];
-  const out = [];
-  for(let i = 1; i < rows.length; i++){
-    const row = rows[i];
-    if(!row) continue;
-    const key = String(row[idx["Metric Key"]] || "").trim();
-    const format = String(row[idx["Format"]] || "").trim().toUpperCase();
-    const direction = String(row[idx["Direction"]] || "").trim().toUpperCase();
-    const include = String(row[idx["Include in Heatmap"]] || "").trim().toUpperCase();
-    // guards against blank/instructional rows: a real metric row always has a valid Format + Direction
-    if(!key || !METRIC_FORMATS.has(format) || !METRIC_DIRECTIONS.has(direction)) continue;
-    if(include !== "YES") continue;
-    out.push({
-      key: key,
-      display: String(row[idx["Display Name"]] || key).trim(),
-      category: String(row[idx["Category"]] || "OTHER").trim() || "OTHER",
-      format: format,
-      direction: direction
-    });
+    const player = {};
+    PLAYER_FIELDS.forEach(function(f){ player[f] = obj[f] || ""; });
+    out.push(player);
   }
   return out;
 }
@@ -314,7 +288,7 @@ function numericValue(raw, format){
   if(format === "PERCENT"){
     const n = parseFloat(s.replace(/%/g,""));
     if(isNaN(n)) return null;
-    return n <= 1 ? n * 100 : n; // supports either 0.481 or 48.1 style source values
+    return n <= 1 ? n * 100 : n;
   }
   const n = parseFloat(s.replace(/,/g,""));
   return isNaN(n) ? null : n;
@@ -703,7 +677,6 @@ const DEMO_BRIEF = {
 };
 const DEMO_PLAYERS = [
   { "Player ID":"P01","Name":"Example Player One","Current Team":"Example BC","League":"EuroCup","Age":"23","Height":"6'9\"",
-    "Wingspan":"7'1\"","MPG":"26.4","Games":"27","3P%":"0.372","FT%":"0.81","SPG":"0.9","BPG":"0.7",
     "Position":"PF","Role":"Stretch-4","Archetype":"Switchable floor-spacer","PPG":"12.4","RPG":"6.1","APG":"1.8","FG%":"0.481",
     "Why He's Here":"Fits the switchable-4 need directly; production translates from a lower defensive-pace league.",
     "Fit With Brief":"Matches Bonn's spacing need; defensive versatility is the swing skill worth verifying on film.",
@@ -711,7 +684,6 @@ const DEMO_PLAYERS = [
     "Watch / Concerns":"Rebounding rate; has never played a full 30+ minute role.",
     "Priority":"High","Category":"Primary Target" },
   { "Player ID":"P02","Name":"Example Player Two","Current Team":"Example United","League":"ProA","Age":"21","Height":"6'10\"",
-    "Wingspan":"7'3\"","MPG":"19.8","Games":"24","3P%":"0.0","FT%":"0.64","SPG":"0.5","BPG":"1.6",
     "Position":"C","Role":"Rim protector","Archetype":"Vertical spacer","PPG":"9.8","RPG":"7.4","APG":"0.9","FG%":"0.552",
     "Why He's Here":"Adds rim protection Bonn currently lacks off the bench.",
     "Fit With Brief":"Less proven offensively, but the defensive fit is immediate.",
@@ -719,28 +691,12 @@ const DEMO_PLAYERS = [
     "Watch / Concerns":"Limited range, foul rate is high.",
     "Priority":"Medium","Category":"Depth Option" },
   { "Player ID":"P03","Name":"Example Player Three","Current Team":"Example Club","League":"BBL","Age":"25","Height":"6'8\"",
-    "Wingspan":"6'11\"","MPG":"29.1","Games":"31","3P%":"0.341","FT%":"0.77","SPG":"1.1","BPG":"0.4",
     "Position":"PF","Role":"Small-ball 5","Archetype":"Switch-everything wing-big","PPG":"14.1","RPG":"5.5","APG":"2.6","FG%":"0.463",
     "Why He's Here":"Already produces in this exact league at a high level.",
     "Fit With Brief":"The most complete fit on paper; asking price is the open question.",
     "Key Strengths":"Switchability, secondary playmaking, proven in-league.",
     "Watch / Concerns":"Contract situation unclear; may be out of budget range.",
     "Priority":"High","Category":"Primary Target" }
-];
-const DEMO_METRIC_DEFS = [
-  {key:"Height",display:"HEIGHT",category:"PHYSICAL",format:"FEET_INCHES",direction:"NEUTRAL"},
-  {key:"Wingspan",display:"WINGSPAN",category:"PHYSICAL",format:"FEET_INCHES",direction:"NEUTRAL"},
-  {key:"Age",display:"AGE",category:"PHYSICAL",format:"DECIMAL",direction:"NEUTRAL"},
-  {key:"MPG",display:"MPG",category:"ROLE / USAGE",format:"DECIMAL",direction:"NEUTRAL"},
-  {key:"Games",display:"GAMES (SAMPLE)",category:"ROLE / USAGE",format:"COUNT",direction:"NEUTRAL"},
-  {key:"PPG",display:"PPG",category:"SCORING",format:"DECIMAL",direction:"HIGHER_IS_BETTER"},
-  {key:"FG%",display:"FG%",category:"SHOOTING",format:"PERCENT",direction:"HIGHER_IS_BETTER"},
-  {key:"3P%",display:"3P%",category:"SHOOTING",format:"PERCENT",direction:"HIGHER_IS_BETTER"},
-  {key:"FT%",display:"FT%",category:"SHOOTING",format:"PERCENT",direction:"HIGHER_IS_BETTER"},
-  {key:"APG",display:"APG",category:"PLAYMAKING",format:"DECIMAL",direction:"HIGHER_IS_BETTER"},
-  {key:"RPG",display:"RPG",category:"REBOUNDING",format:"DECIMAL",direction:"HIGHER_IS_BETTER"},
-  {key:"SPG",display:"SPG",category:"DEFENSE",format:"DECIMAL",direction:"HIGHER_IS_BETTER"},
-  {key:"BPG",display:"BPG",category:"DEFENSE",format:"DECIMAL",direction:"HIGHER_IS_BETTER"}
 ];
 
 (function main(){
@@ -749,7 +705,7 @@ const DEMO_METRIC_DEFS = [
 
   if(!id){
     ALL_PLAYERS = DEMO_PLAYERS;
-    METRIC_DEFS = usableMetrics(DEMO_METRIC_DEFS, DEMO_PLAYERS);
+    METRIC_DEFS = usableMetrics(BUILT_IN_METRICS, DEMO_PLAYERS);
     applyBranding(DEMO_BRIEF);
     renderBoard(DEMO_BRIEF, DEMO_PLAYERS, { demo:true });
     return;
@@ -775,19 +731,10 @@ const DEMO_METRIC_DEFS = [
         return;
       }
       const players = parsePlayers(results[1]);
-
-      function finish(metricRows){
-        ALL_PLAYERS = players;
-        METRIC_DEFS = usableMetrics(parseMetricConfig(metricRows || []), players);
-        applyBranding(brief);
-        renderBoard(brief, players, {});
-      }
-
-      if(decoded.metricsGid){
-        fetchCsvRows(csvUrl(decoded.key, decoded.metricsGid)).then(finish).catch(function(){ finish([]); });
-      } else {
-        finish([]);
-      }
+      ALL_PLAYERS = players;
+      METRIC_DEFS = usableMetrics(BUILT_IN_METRICS, players);
+      applyBranding(brief);
+      renderBoard(brief, players, {});
     })
     .catch(function(e){
       showState("DARK HORSE HOOPS", "Something went wrong loading this board.", "Try again in a few minutes. If it keeps happening, the underlying sheet may need attention.");

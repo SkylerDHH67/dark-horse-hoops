@@ -47,9 +47,6 @@
   <label>Players - Published tab &mdash; publish link</label>
   <input type="text" id="players-link" placeholder="https://docs.google.com/spreadsheets/d/e/2PACX-.../pub?gid=...&output=csv">
 
-  <label>Metric Config - Published tab &mdash; publish link <span style="color:var(--ink-dim);text-transform:none;letter-spacing:0;font-family:'Oswald',sans-serif;">(optional &mdash; only if you want the Compare / Heatmap view active on this board)</span></label>
-  <input type="text" id="metrics-link" placeholder="https://docs.google.com/spreadsheets/d/e/2PACX-.../pub?gid=...&output=csv">
-
   <details class="advanced">
     <summary>Site address (only change this if darkhorsehoops.net isn't set up yet)</summary>
     <label>Where board.html is hosted</label>
@@ -102,7 +99,6 @@ document.getElementById("generate-btn").addEventListener("click", function(){
   clearError();
   const briefRaw = document.getElementById("brief-link").value;
   const playersRaw = document.getElementById("players-link").value;
-  const metricsRaw = document.getElementById("metrics-link").value;
   let baseUrl = document.getElementById("base-url").value.trim() || "https://darkhorsehoops.net";
   baseUrl = baseUrl.replace(/\/+$/,"");
 
@@ -113,25 +109,23 @@ document.getElementById("generate-btn").addEventListener("click", function(){
 
   const brief = parsePublishLink(briefRaw);
   const players = parsePublishLink(playersRaw);
-  const metrics = metricsRaw ? parsePublishLink(metricsRaw) : null;
 
-  if(!brief || !players || (metricsRaw && !metrics)){
+  if(!brief || !players){
     showError("One of those links doesn't look like a Google Sheets \"Publish to web\" CSV link. It should look like: https://docs.google.com/spreadsheets/d/e/2PACX-.../pub?gid=123456&single=true&output=csv");
     return;
   }
-  if(brief.key !== players.key || (metrics && metrics.key !== brief.key)){
-    showError("These links appear to come from different Google Sheets. Make sure all of them are published from the same report's Sheet, then try again.");
+  if(brief.key !== players.key){
+    showError("These links appear to come from different Google Sheets. Make sure both are published from the same report's Sheet, then try again.");
     return;
   }
-  const gids = [brief.gid, players.gid].concat(metrics ? [metrics.gid] : []);
-  if(new Set(gids).size !== gids.length){
-    showError("Two of these links point to the exact same tab. Double-check you copied each one from its own tab, not the same tab twice.");
+  if(brief.gid === players.gid){
+    showError("Both links point to the exact same tab. Double-check you copied each one from its own tab, not the same tab twice.");
     return;
   }
 
   try{ localStorage.setItem("darkhorse_base_url", baseUrl); }catch(e){ /* ignore */ }
 
-  const payload = brief.key + "|" + brief.gid + "|" + players.gid + (metrics ? "|" + metrics.gid : "");
+  const payload = brief.key + "|" + brief.gid + "|" + players.gid;
   const id = toBase64Url(payload);
   const finalUrl = baseUrl + "/board.html?id=" + id;
 

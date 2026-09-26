@@ -17,14 +17,11 @@ this repo is just the display layer, and it never changes when a new client is a
 
 Every report lives in its own Google Sheet, duplicated from the Dark Horse report
 template. Two tabs in that sheet get published to the web as CSV: `Report Brief -
-Published` and `Players - Published` (a third, `Metric Config - Published`, is
-optional -- see Compare / Heatmap below). `link-generator.html` takes those
+Published` and `Players - Published`. `link-generator.html` takes those two
 published links, pulls out the shared spreadsheet key and each tab's `gid`, and
-packs `key|briefGid|playersGid` (or `key|briefGid|playersGid|metricsGid` when the
-Compare view is enabled) into one scrambled string -- that string is the `?id=`
-value in the final board link. `board.html` reverses that exact process:
+packs `key|briefGid|playersGid` into one scrambled string -- that string is the
+`?id=` value in the final board link. `board.html` reverses that exact process:
 decode the id, rebuild the CSV URLs, fetch them, check `Publish = YES`, and render.
-Old 3-part links keep working forever -- they just never show a Compare toggle.
 
 There is no database and no directory of clients anywhere in this repo or on the
 web. Each link is self-contained. This is obscurity, not authentication. Anyone
@@ -44,11 +41,10 @@ No code changes, ever. The steps:
 1. Duplicate the Dark Horse Sheet template in Google Drive.
 2. Fill in Team Intel and Players on the Internal tabs.
 3. Set `Publish = NO` and `Branding_Mode` while you work.
-4. Publish the `- Published` tabs to the web as CSV (individually, see above) --
-   Report Brief and Players are required; Metric Config is optional, only publish
-   it if you want the Compare / Heatmap view active on this board.
+4. Publish the `Report Brief - Published` and `Players - Published` tabs to the
+   web as CSV (individually, see above). Both are required.
 5. Set `Publish = YES` when ready.
-6. Paste the published links into `link-generator.html`, generate the link, send it.
+6. Paste the two published links into `link-generator.html`, generate the link, send it.
 
 ## Whitelisting
 
@@ -59,34 +55,30 @@ always have; anything internal-only (Skyler Notes, Gemini prompts) never reaches
 a Published tab in the first place, so it's structurally invisible to the site,
 not just hidden by convention.
 
-Compare view works differently on purpose: it reads *any* extra column that
-exists on `Players - Published` **and** has a matching row in `Metric Config -
-Published`. That second requirement is what keeps this safe -- a column only
-becomes a comparison metric once you've deliberately described it in Metric
-Config; anything you haven't described is silently ignored, never guessed at.
+Compare view works differently on purpose: rather than reading whatever columns
+happen to exist, it only ever looks for a small, fixed list of metrics that are
+hardcoded in `board.html` itself (see `BUILT_IN_METRICS` near the top of its
+`<script>`) -- Height, Age, PPG, RPG, APG, FG%. Those six are already present on
+every `Players - Published` tab today, so Compare works on every existing and
+future report with zero Google Sheet changes, ever.
 
 ## Compare / Heatmap view
 
 Every board can show two views: **Cards** (unchanged) and **Compare**, a data
-heatmap driven entirely by the `Metric Config - Published` tab. A board with no
-Metric Config link simply has no Compare toggle -- Cards-only, exactly like
-before this feature existed.
+heatmap. Compare checks which of the built-in metrics actually have a matching
+column on this report's `Players - Published` data and only shows those -- if a
+report is ever missing one (or all) of them, that metric (or the whole Compare
+toggle) just quietly doesn't appear. Cards always work regardless.
 
-Each row in Metric Config describes one metric: `Metric Key` (must exactly match
-a column header on Players - Published), `Display Name`, `Category` (groups
-metrics on screen -- PHYSICAL, SHOOTING, DEFENSE, or anything else you want),
-`Format` (`PERCENT`, `DECIMAL`, `COUNT`, `FEET_INCHES`, or `MEASUREMENT`),
-`Direction` (`HIGHER_IS_BETTER`, `LOWER_IS_BETTER`, or `NEUTRAL` -- neutral is for
-things like height or age where "bigger" isn't automatically "better"), and
-`Include in Heatmap` (`YES`/`NO`).
+Each built-in metric has a display name, a category (PHYSICAL, SCORING,
+SHOOTING, PLAYMAKING, REBOUNDING -- these group and order the columns on
+screen), a format (`PERCENT`, `DECIMAL`, `COUNT`, or `FEET_INCHES`, controlling
+how the raw sheet value is displayed), and a direction (`HIGHER_IS_BETTER`,
+`LOWER_IS_BETTER`, or `NEUTRAL` -- neutral is for things like height or age
+where "bigger" isn't automatically "better").
 
-To add a brand-new metric to a future report: add the column to Players -
-Internal, mirror it to Players - Published with a formula (same pattern as any
-other player column), add one row to Metric Config - Internal describing it, and
-copy the mirror formula down on Metric Config - Published. No one ever touches
-this repo's code for that -- the site just reads whatever's configured. A
-column present in the data but missing from Metric Config is never shown in
-Compare; it doesn't error, it's just not there yet.
+There is no sheet-driven config of any kind -- adding or changing a metric means
+editing `BUILT_IN_METRICS` in `board.html`'s code, not touching any spreadsheet.
 
 Real values are always shown (heat intensity is a visual layer on top, computed
 relative to whatever's currently visible -- it never replaces the number).
