@@ -12,6 +12,11 @@
     --bg:#0a0b0d; --panel:#121319; --ink:#f1ede2; --ink-dim:#94908a;
     --neon:#6bff6b; --gold:#d9a94f; --gold-hi:#f3d68a; --line:rgba(255,255,255,0.07);
     --accent-1:#d9a94f; --accent-2:#6bff6b;
+    /* RGB-component versions of the accent colors, kept in sync by applyBranding().
+       These exist so gradients/shadows can control alpha (rgba(var(--accent-1-rgb), 0.4))
+       while the hex versions above stay the source of truth for solid colors. */
+    --accent-1-rgb: 217,169,79;
+    --accent-2-rgb: 107,255,107;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Oswald',sans-serif;}
@@ -53,9 +58,14 @@
     border:1px solid var(--line); padding:18px 18px 20px; height:440px;
     display:flex; flex-direction:column; overflow:hidden; cursor:pointer;
     opacity:0; transform:translateY(14px); animation:cardIn .5s ease forwards;
+    transition:transform .3s ease, border-color .35s ease, box-shadow .35s ease;
   }
   @keyframes cardIn{ to{ opacity:1; transform:translateY(0);} }
-  .card:hover{ transform:translateY(-6px); transition:transform .3s ease; }
+  .card:hover, .card:focus-visible, .card:active{
+    transform:translateY(-6px);
+    border-color:rgba(var(--accent-1-rgb),0.55);
+    box-shadow:0 16px 36px -14px rgba(var(--accent-1-rgb),0.4);
+  }
   .card::after{
     content:""; position:absolute; inset:0; pointer-events:none; opacity:.5; mix-blend-mode:overlay;
     background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/></svg>");
@@ -367,7 +377,10 @@ function computeIntensities(players, metric){
 function intensityStyle(t){
   if(t === null || t === undefined) return "";
   const alpha = 0.12 + t * 0.55;
-  return `background:linear-gradient(90deg, rgba(217,169,79,${alpha.toFixed(2)}), rgba(107,255,107,${(alpha*0.9).toFixed(2)}));`;
+  // References the live --accent-1-rgb / --accent-2-rgb custom properties rather than
+  // fixed colors, so the heatmap quietly picks up whatever team colors are currently
+  // active (set by applyBranding) without this function needing to know about them.
+  return `background:linear-gradient(90deg, rgba(var(--accent-1-rgb),${alpha.toFixed(2)}), rgba(var(--accent-2-rgb),${(alpha*0.9).toFixed(2)}));`;
 }
 
 function showState(mark, title, body){
@@ -379,13 +392,25 @@ function showState(mark, title, body){
   document.getElementById("state-body").textContent = body;
 }
 
+function hexToRgbString(hex){
+  const m = /^#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})$/.exec(hex);
+  if(!m) return null;
+  return [parseInt(m[1],16), parseInt(m[2],16), parseInt(m[3],16)].join(",");
+}
+
 function applyBranding(brief){
   const root = document.documentElement.style;
   if(brief["Branding_Mode"] === "CLIENT"){
     const p = brief["Primary Accent Color (hex)"];
     const s = brief["Secondary Accent Color (hex)"];
-    if(/^#[0-9a-fA-F]{6}$/.test(p)) root.setProperty("--accent-1", p);
-    if(/^#[0-9a-fA-F]{6}$/.test(s)) root.setProperty("--accent-2", s);
+    if(/^#[0-9a-fA-F]{6}$/.test(p)){
+      root.setProperty("--accent-1", p);
+      root.setProperty("--accent-1-rgb", hexToRgbString(p));
+    }
+    if(/^#[0-9a-fA-F]{6}$/.test(s)){
+      root.setProperty("--accent-2", s);
+      root.setProperty("--accent-2-rgb", hexToRgbString(s));
+    }
   }
 }
 
