@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dark Horse Link Generator (private)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Bebas+Neue&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#0a0b0d; --panel:#121319; --ink:#f1ede2; --ink-dim:#94908a; --gold:#d9a94f; --gold-hi:#f3d68a; --neon:#6bff6b; --line:rgba(255,255,255,0.09); --danger:#e2645a; }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:radial-gradient(circle at 15% 0%,#14161a 0%,var(--bg) 55%); color:var(--ink); font-family:'Oswald',sans-serif; padding:48px 20px 100px; }
+  .wrap{ max-width:640px; margin:0 auto; }
+  .mark{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:2px; color:var(--gold); text-transform:uppercase; margin-bottom:10px; }
+  h1{ font-family:'Bebas Neue',sans-serif; font-size:34px; letter-spacing:1px; margin:0 0 6px; }
+  .lede{ color:var(--ink-dim); font-size:14.5px; line-height:1.6; margin:0 0 32px; max-width:540px; }
+  .note{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 16px; font-size:13px; color:var(--ink-dim); line-height:1.6; margin-bottom:28px; }
+  .note b{ color:var(--gold-hi); }
+  label{ display:block; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--ink-dim); margin:20px 0 8px; }
+  input[type=text]{ width:100%; background:#181a1f; border:1px solid var(--line); border-radius:8px; color:var(--ink); font-family:'JetBrains Mono',monospace; font-size:13px; padding:12px 14px; }
+  input[type=text]:focus{ outline:none; border-color:var(--gold); }
+  button{ margin-top:24px; width:100%; padding:14px; border:none; border-radius:8px; background:linear-gradient(90deg,var(--gold),var(--neon)); color:#0a0b0d; font-family:'Oswald',sans-serif; font-weight:600; font-size:15px; letter-spacing:.5px; cursor:pointer; }
+  button:active{ transform:scale(.99); }
+  #error{ margin-top:16px; padding:12px 14px; border-radius:8px; background:rgba(226,100,90,0.1); border:1px solid rgba(226,100,90,0.4); color:var(--danger); font-size:13px; line-height:1.6; }
+  #result{ margin-top:28px; padding:20px; border-radius:10px; background:var(--panel); border:1px solid var(--line); }
+  #result h3{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--neon); margin:0 0 10px; }
+  #result-link{ word-break:break-all; font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--ink); background:#181a1f; padding:12px; border-radius:6px; display:block; margin-bottom:12px; }
+  #copy-btn{ background:transparent; border:1px solid var(--gold); color:var(--gold-hi); font-weight:500; padding:10px; }
+  .advanced{ margin-top:36px; }
+  .advanced summary{ cursor:pointer; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:1px; color:var(--ink-dim); text-transform:uppercase; }
+  .hidden{ display:none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="mark">DARK HORSE HOOPS &middot; INTERNAL TOOL</div>
+  <h1>Board link generator</h1>
+  <p class="lede">Turns two published Google Sheet links into one darkhorsehoops.net board link. This page is private &mdash; it isn't linked from the public site. Bookmark it for your own use.</p>
+
+  <div class="note">
+    Before you paste anything: in each Sheet, use <b>File &rarr; Share &rarr; Publish to web</b> and publish the <b>individual tab</b> (not "Entire document") for both <b>Report Brief - Published</b> and <b>Players - Published</b>, each as CSV. Publishing individual tabs, rather than the whole document, is what keeps your Internal tabs from ever being reachable on the web at all.
+  </div>
+
+  <label>Report Brief - Published tab &mdash; publish link</label>
+  <input type="text" id="brief-link" placeholder="https://docs.google.com/spreadsheets/d/e/2PACX-.../pub?gid=...&output=csv">
+
+  <label>Players - Published tab &mdash; publish link</label>
+  <input type="text" id="players-link" placeholder="https://docs.google.com/spreadsheets/d/e/2PACX-.../pub?gid=...&output=csv">
+
+  <details class="advanced">
+    <summary>Site address (only change this if darkhorsehoops.net isn't set up yet)</summary>
+    <label>Where board.html is hosted</label>
+    <input type="text" id="base-url" placeholder="https://darkhorsehoops.net">
+  </details>
+
+  <button id="generate-btn">Generate board link</button>
+  <div id="error" class="hidden"></div>
+
+  <div id="result" class="hidden">
+    <h3>Board link ready</h3>
+    <span id="result-link"></span>
+    <button id="copy-btn">Copy link</button>
+  </div>
+</div>
+
+<script>
+function parsePublishLink(urlStr){
+  let url;
+  try{ url = new URL(urlStr.trim()); }
+  catch(e){ return null; }
+  const pathMatch = url.pathname.match(/\/spreadsheets\/d\/e\/([^\/]+)\/pub/);
+  const gid = url.searchParams.get("gid");
+  if(!pathMatch || !gid) return null;
+  return { key: pathMatch[1], gid: gid };
+}
+
+function toBase64Url(str){
+  const b64 = btoa(str);
+  return b64.replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+}
+
+function showError(msg){
+  const el = document.getElementById("error");
+  el.textContent = msg;
+  el.classList.remove("hidden");
+  document.getElementById("result").classList.add("hidden");
+}
+
+function clearError(){ document.getElementById("error").classList.add("hidden"); }
+
+(function restoreBaseUrl(){
+  try{
+    const saved = localStorage.getItem("darkhorse_base_url");
+    if(saved) document.getElementById("base-url").value = saved;
+  }catch(e){ /* ignore -- storage may be unavailable */ }
+})();
+
+document.getElementById("generate-btn").addEventListener("click", function(){
+  clearError();
+  const briefRaw = document.getElementById("brief-link").value;
+  const playersRaw = document.getElementById("players-link").value;
+  let baseUrl = document.getElementById("base-url").value.trim() || "https://darkhorsehoops.net";
+  baseUrl = baseUrl.replace(/\/+$/,"");
+
+  if(!briefRaw || !playersRaw){
+    showError("Paste both links before generating.");
+    return;
+  }
+
+  const brief = parsePublishLink(briefRaw);
+  const players = parsePublishLink(playersRaw);
+
+  if(!brief || !players){
+    showError("One of those links doesn't look like a Google Sheets \"Publish to web\" CSV link. It should look like: https://docs.google.com/spreadsheets/d/e/2PACX-.../pub?gid=123456&single=true&output=csv");
+    return;
+  }
+  if(brief.key !== players.key){
+    showError("These two links appear to come from different Google Sheets. Make sure both are published from the same report's Sheet, then try again.");
+    return;
+  }
+  if(brief.gid === players.gid){
+    showError("Both links point to the exact same tab. Double-check you copied the Report Brief link and the Players link separately, not the same one twice.");
+    return;
+  }
+
+  try{ localStorage.setItem("darkhorse_base_url", baseUrl); }catch(e){ /* ignore */ }
+
+  const payload = brief.key + "|" + brief.gid + "|" + players.gid;
+  const id = toBase64Url(payload);
+  const finalUrl = baseUrl + "/board.html?id=" + id;
+
+  document.getElementById("result-link").textContent = finalUrl;
+  document.getElementById("result").classList.remove("hidden");
+
+  document.getElementById("copy-btn").onclick = function(){
+    navigator.clipboard.writeText(finalUrl).then(function(){
+      document.getElementById("copy-btn").textContent = "Copied";
+      setTimeout(function(){ document.getElementById("copy-btn").textContent = "Copy link"; }, 1500);
+    });
+  };
+});
+</script>
+</body>
+</html>

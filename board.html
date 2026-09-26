@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dark Horse Hoops</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Bebas+Neue&family=JetBrains+Mono:wght@400;500&family=Fraunces:ital,wght@1,500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --bg:#0a0b0d; --panel:#121319; --ink:#f1ede2; --ink-dim:#94908a;
+    --neon:#6bff6b; --gold:#d9a94f; --gold-hi:#f3d68a; --line:rgba(255,255,255,0.07);
+    --accent-1:#d9a94f; --accent-2:#6bff6b;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Oswald',sans-serif;}
+  #app{min-height:100vh;}
+  .hidden{display:none !important;}
+
+  #state-screen{
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    text-align:center; padding:32px;
+  }
+  #state-screen .box{ max-width:420px; }
+  #state-screen h1{ font-family:'Bebas Neue',sans-serif; font-size:32px; letter-spacing:1px; margin:0 0 12px; }
+  #state-screen p{ color:var(--ink-dim); font-size:15px; line-height:1.6; margin:0; }
+  #state-screen .mark{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--gold); letter-spacing:2px; text-transform:uppercase; margin-bottom:14px; }
+
+  #header{ padding:56px 24px 28px; text-align:center; background:radial-gradient(circle at 50% 0%,#181a1f 0%,var(--bg) 60%); }
+  #header .prepared{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--ink-dim); margin-bottom:10px; }
+  #header .demo-flag{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:1px; color:var(--gold-hi); border:1px solid rgba(217,169,79,0.4); padding:3px 10px; border-radius:3px; margin-bottom:14px; }
+  #header h1{ font-family:'Bebas Neue',sans-serif; font-size:clamp(30px,6vw,52px); letter-spacing:1px; margin:0 0 8px; }
+  #header .sub{ font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; color: var(--accent-1); text-transform:uppercase; margin-bottom:20px; }
+  #header .brief{ max-width:640px; margin:0 auto; color:var(--ink-dim); font-size:15px; line-height:1.7; }
+  #header .positions{ margin-top:16px; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--ink-dim); letter-spacing:.5px; }
+  #header .positions b{ color:var(--ink); font-weight:500; }
+
+  #grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:28px; padding:12px 24px 64px; max-width:1240px; margin:0 auto; }
+
+  .card{
+    position:relative; border-radius:14px; background:var(--panel);
+    border:1px solid var(--line); padding:18px 18px 20px; height:440px;
+    display:flex; flex-direction:column; overflow:hidden; cursor:pointer;
+    opacity:0; transform:translateY(14px); animation:cardIn .5s ease forwards;
+  }
+  @keyframes cardIn{ to{ opacity:1; transform:translateY(0);} }
+  .card:hover{ transform:translateY(-6px); transition:transform .3s ease; }
+  .card::after{
+    content:""; position:absolute; inset:0; pointer-events:none; opacity:.5; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/></svg>");
+  }
+  .card .gold-edge{ position:absolute; left:0; top:14px; bottom:14px; width:3px; background:linear-gradient(180deg,var(--gold-hi),var(--accent-1) 60%,#8a6a2c); border-radius:0 2px 2px 0; }
+  .card .head{ display:flex; justify-content:space-between; align-items:center; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:1.5px; margin-bottom:12px; text-transform:uppercase; color:var(--ink-dim); padding-left:8px; }
+  .card .status{ display:flex; align-items:center; gap:6px; }
+  .card .dot{ width:6px; height:6px; border-radius:50%; background:var(--accent-2); box-shadow:0 0 8px 1px rgba(107,255,107,0.65); }
+  .card .frame{ position:relative; flex:1; margin-left:8px; clip-path:polygon(8% 0%,100% 0%,100% 82%,92% 100%,0% 100%,0% 18%);
+    background:repeating-linear-gradient(0deg,rgba(255,255,255,.02) 0,rgba(255,255,255,.02) 1px,transparent 1px,transparent 22px),
+               repeating-linear-gradient(90deg,rgba(255,255,255,.02) 0,rgba(255,255,255,.02) 1px,transparent 1px,transparent 22px),
+               linear-gradient(160deg,#21242b 0%,#14161a 100%);
+    box-shadow:inset 0 0 0 1px rgba(107,255,107,.28); overflow:hidden; }
+  .card .frame img{ position:absolute; bottom:0; left:50%; transform:translateX(-50%); height:100%; width:auto; max-width:none; object-fit:cover; }
+  .card .frame .silhouette{ position:absolute; bottom:0; left:50%; transform:translateX(-50%); width:70%; height:88%; opacity:.9; }
+  .card .frame .silhouette path{ fill:#383b41; }
+  .card .scanline{ position:absolute; left:0; right:0; height:2px; top:0; background:var(--accent-2); box-shadow:0 0 10px 2px rgba(107,255,107,.6); animation:sweep 3.6s ease-in-out infinite; }
+  @keyframes sweep{ 0%{top:0%;opacity:0;} 8%{opacity:1;} 50%{top:96%;opacity:1;} 58%{opacity:0;} 100%{top:96%;opacity:0;} }
+  .card .tag{ position:absolute; top:10px; right:10px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:1.5px; padding:3px 8px; border:1px solid rgba(217,169,79,.5); border-radius:3px; transform:rotate(-2deg); background:linear-gradient(160deg,rgba(217,169,79,.12),rgba(217,169,79,.02)); color:var(--gold-hi); }
+  .card .readout{ margin-left:8px; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--ink-dim); line-height:1.85; }
+  .card .kicker{ font-family:'Fraunces',serif; font-style:italic; font-size:12px; color:var(--accent-1); letter-spacing:.3px; margin:10px 0 2px; }
+  .card .name-line{ font-family:'Oswald',sans-serif; color:var(--ink); font-size:19px; font-weight:600; letter-spacing:.4px; margin-bottom:5px; }
+  .card .readout b{ color:var(--ink); font-weight:500; }
+  .card .meter{ margin-top:9px; height:4px; border-radius:2px; background:#23262c; overflow:hidden; }
+  .card .meter i{ display:block; height:100%; background:linear-gradient(90deg,var(--accent-1),var(--accent-2)); }
+
+  #dossier-overlay{ position:fixed; inset:0; background:rgba(6,7,8,0.88); backdrop-filter:blur(6px); z-index:50;
+    display:flex; align-items:flex-start; justify-content:center; overflow-y:auto; padding:40px 16px; }
+  #dossier-overlay.hidden{ display:none !important; }
+  .dossier{ background:var(--panel); border:1px solid var(--line); border-radius:16px; max-width:720px; width:100%;
+    padding:28px; position:relative; opacity:0; transform:translateY(18px) scale(.98); animation:dossierIn .35s ease forwards; }
+  @keyframes dossierIn{ to{ opacity:1; transform:translateY(0) scale(1); } }
+  .dossier .close{ position:absolute; top:16px; right:16px; width:32px; height:32px; border-radius:50%; border:1px solid var(--line);
+    background:transparent; color:var(--ink-dim); font-size:16px; cursor:pointer; }
+  .dossier .top{ display:flex; gap:22px; margin-bottom:20px; }
+  .dossier .photo{ width:160px; height:200px; border-radius:10px; overflow:hidden; background:linear-gradient(160deg,#21242b,#14161a); flex-shrink:0; position:relative; }
+  .dossier .photo img{ width:100%; height:100%; object-fit:cover; }
+  .dossier .photo .silhouette{ position:absolute; inset:0; margin:auto; width:70%; height:88%; }
+  .dossier .photo .silhouette path{ fill:#383b41; }
+  .dossier h2{ font-family:'Bebas Neue',sans-serif; font-size:32px; letter-spacing:1px; margin:0 0 6px; }
+  .dossier .meta{ font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--ink-dim); letter-spacing:.5px; margin-bottom:14px; }
+  .dossier .meta b{ color:var(--ink); font-weight:500; }
+  .dossier .stat-row{ display:flex; gap:18px; flex-wrap:wrap; }
+  .dossier .stat{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-dim); }
+  .dossier .stat b{ display:block; font-size:18px; color:var(--ink); font-family:'Oswald',sans-serif; font-weight:600; }
+  .dossier section{ margin-bottom:16px; }
+  .dossier section h3{ font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:1.5px; text-transform:uppercase; color:var(--accent-1); margin:0 0 6px; }
+  .dossier section p{ font-size:14px; line-height:1.65; color:var(--ink); margin:0; }
+  .dossier .actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:20px; }
+  .dossier .actions a{ font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.5px; text-decoration:none;
+    padding:10px 18px; border-radius:6px; border:1px solid var(--line); color:var(--ink); }
+  .dossier .actions a.primary{ background:linear-gradient(90deg,var(--accent-1),var(--accent-2)); color:#0a0b0d; font-weight:600; border:none; }
+
+  @media (max-width:560px){
+    .dossier .top{ flex-direction:column; }
+    .dossier .photo{ width:100%; height:220px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="state-screen" class="hidden"><div class="box">
+  <div class="mark" id="state-mark">DARK HORSE HOOPS</div>
+  <h1 id="state-title"></h1>
+  <p id="state-body"></p>
+</div></div>
+
+<div id="app" class="hidden">
+  <div id="header"></div>
+  <div id="grid"></div>
+</div>
+
+<div id="dossier-overlay" class="hidden"></div>
+
+<script>
+const BRIEF_FIELDS = [
+  "Report Title","Team","League","Country","Season","Report Date","Positions Needed",
+  "Published Brief","Publish","Branding_Mode","Client Team Name","Prepared By Line",
+  "Primary Accent Color (hex)","Secondary Accent Color (hex)","Dark Horse Logo URL",
+  "Client Logo URL","Secondary Client Mark URL","Team Photography URL",
+  "Arena / Background Image URL","Header / Hero Image URL","Texture / Background Asset URL"
+];
+const PLAYER_FIELDS = [
+  "Player ID","Name","Current Team","League","Country","Nationality","Age","Height",
+  "Position","Secondary Position","Role","Archetype","PPG","RPG","APG","FG%",
+  "Why He's Here","Fit With Brief","Key Strengths","Watch / Concerns",
+  "Player Image URL","Player Action Image URL","Player Cutout URL",
+  "Film URL","Highlight URL","External Profile URL","Priority","Category"
+];
+
+const SILHOUETTE_PATH = "M50 8c8 0 14 6 14 14s-6 14-14 14-14-6-14-14 6-14 14-14zm-6 30h12c10 0 18 7 20 17l6 38-14 4-4-26-3 60h-9l-2-46-2 46h-9l-3-60-4 26-14-4 6-38c2-10 10-17 20-17z";
+function silhouetteSVG(cls){
+  return `<svg class="${cls}" viewBox="0 0 100 160" preserveAspectRatio="xMidYMax meet"><path d="${SILHOUETTE_PATH}"/></svg>`;
+}
+
+function decodeBoardId(id){
+  const b64 = id.replace(/-/g,"+").replace(/_/g,"/");
+  const padded = b64 + "===".slice((b64.length + 3) % 4);
+  const raw = atob(padded);
+  const parts = raw.split("|");
+  if(parts.length !== 3) throw new Error("Malformed board id");
+  const [key, briefGid, playersGid] = parts;
+  if(!key || !briefGid || !playersGid) throw new Error("Malformed board id");
+  return { key, briefGid, playersGid };
+}
+function csvUrl(key, gid){
+  return `https://docs.google.com/spreadsheets/d/e/${key}/pub?gid=${gid}&single=true&output=csv`;
+}
+
+function fetchCsvRows(url){
+  return fetch(url, { cache: "no-store" }).then(function(res){
+    if(!res.ok) throw new Error("CSV fetch failed: " + res.status);
+    return res.text();
+  }).then(function(text){
+    return new Promise(function(resolve){
+      Papa.parse(text, { complete: function(r){ resolve(r.data); } });
+    });
+  });
+}
+
+function parseBrief(rows){
+  const lookup = {};
+  rows.forEach(function(row){
+    if(row && row[0]) lookup[String(row[0]).trim()] = row[1] !== undefined ? String(row[1]).trim() : "";
+  });
+  const brief = {};
+  BRIEF_FIELDS.forEach(function(f){ brief[f] = lookup[f] || ""; });
+  return brief;
+}
+
+function parsePlayers(rows){
+  if(!rows.length) return [];
+  const header = rows[0].map(function(h){ return String(h || "").trim(); });
+  const out = [];
+  for(let i = 1; i < rows.length; i++){
+    const row = rows[i];
+    if(!row || row.every(function(c){ return !c; })) continue;
+    const obj = {};
+    header.forEach(function(h, idx){ obj[h] = row[idx] !== undefined ? row[idx] : ""; });
+    if(!obj["Name"]) continue;
+    const player = {};
+    PLAYER_FIELDS.forEach(function(f){ player[f] = obj[f] || ""; });
+    out.push(player);
+  }
+  return out;
+}
+
+function showState(mark, title, body){
+  document.getElementById("app").classList.add("hidden");
+  const s = document.getElementById("state-screen");
+  s.classList.remove("hidden");
+  document.getElementById("state-mark").textContent = mark;
+  document.getElementById("state-title").textContent = title;
+  document.getElementById("state-body").textContent = body;
+}
+
+function applyBranding(brief){
+  const root = document.documentElement.style;
+  if(brief["Branding_Mode"] === "CLIENT"){
+    const p = brief["Primary Accent Color (hex)"];
+    const s = brief["Secondary Accent Color (hex)"];
+    if(/^#[0-9a-fA-F]{6}$/.test(p)) root.setProperty("--accent-1", p);
+    if(/^#[0-9a-fA-F]{6}$/.test(s)) root.setProperty("--accent-2", s);
+  }
+}
+
+function pickImage(player, keys){
+  for(const k of keys){ if(player[k]) return player[k]; }
+  return null;
+}
+
+function renderHeader(brief, opts){
+  const el = document.getElementById("header");
+  const demo = opts && opts.demo;
+  el.innerHTML = `
+    ${demo ? '<div class="demo-flag">DEMO PREVIEW &mdash; NO LIVE SHEET LOADED</div><br>' : ''}
+    <div class="prepared">${brief["Prepared By Line"] || "Prepared by Dark Horse Hoops"}</div>
+    <h1>${brief["Report Title"] || "Dark Horse Sourcing Board"}</h1>
+    <div class="sub">${[brief["Team"], brief["League"], brief["Country"], brief["Season"]].filter(Boolean).join(" &middot; ")}</div>
+    <div class="brief">${brief["Published Brief"] || ""}</div>
+    ${brief["Positions Needed"] ? `<div class="positions">TARGETING &nbsp;<b>${brief["Positions Needed"]}</b></div>` : ""}
+  `;
+}
+
+function renderCard(player, index){
+  const div = document.createElement("div");
+  div.className = "card";
+  div.style.animationDelay = (index * 70) + "ms";
+  const imgUrl = pickImage(player, ["Player Cutout URL","Player Action Image URL","Player Image URL"]);
+  div.innerHTML = `
+    <div class="gold-edge"></div>
+    <div class="head"><span>DH &middot; ${String(player["Player ID"] || (index+1)).toUpperCase()}</span>
+      <span class="status"><span class="dot"></span>ACTIVE</span></div>
+    <div class="frame">
+      ${imgUrl ? `<img src="${imgUrl}" alt="" onerror="this.remove()">` : ""}
+      ${!imgUrl ? silhouetteSVG("silhouette") : ""}
+      <div class="scanline"></div>
+      <div class="tag">${player["Priority"] || "-"}</div>
+    </div>
+    <div class="kicker">${player["Role"] || player["Archetype"] || ""}</div>
+    <div class="readout">
+      <div class="name-line">${player["Name"]}</div>
+      <div>POS <b>${player["Position"] || "-"}</b> &nbsp; HT <b>${player["Height"] || "-"}</b> &nbsp; AGE <b>${player["Age"] || "-"}</b></div>
+      <div>TEAM <b>${player["Current Team"] || "-"}</b>${player["League"] ? ", " + player["League"] : ""}</div>
+      <div class="meter"><i style="width:${Math.min(100, Math.max(8, Number(player["PPG"]) * 5 || 30))}%"></i></div>
+    </div>
+  `;
+  div.addEventListener("click", function(){ openDossier(player); });
+  return div;
+}
+
+function renderBoard(brief, players, opts){
+  document.getElementById("state-screen").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+  renderHeader(brief, opts);
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+  players.forEach(function(p, i){ grid.appendChild(renderCard(p, i)); });
+}
+
+function actionLink(label, url, primary){
+  if(!url) return "";
+  return `<a href="${url}" target="_blank" rel="noopener" class="${primary ? 'primary' : ''}">${label}</a>`;
+}
+
+function openDossier(player){
+  const overlay = document.getElementById("dossier-overlay");
+  const imgUrl = pickImage(player, ["Player Cutout URL","Player Action Image URL","Player Image URL"]);
+  overlay.innerHTML = `
+    <div class="dossier">
+      <button class="close" onclick="closeDossier()">&times;</button>
+      <div class="top">
+        <div class="photo">
+          ${imgUrl ? `<img src="${imgUrl}" alt="" onerror="this.remove()">` : silhouetteSVG("silhouette")}
+        </div>
+        <div>
+          <h2>${player["Name"]}</h2>
+          <div class="meta">${[player["Position"], player["Height"], player["Age"] ? "Age " + player["Age"] : "", player["Current Team"], player["League"]].filter(Boolean).join(" &middot; ")}</div>
+          <div class="stat-row">
+            ${player["PPG"] ? `<div class="stat"><b>${player["PPG"]}</b>PPG</div>` : ""}
+            ${player["RPG"] ? `<div class="stat"><b>${player["RPG"]}</b>RPG</div>` : ""}
+            ${player["APG"] ? `<div class="stat"><b>${player["APG"]}</b>APG</div>` : ""}
+            ${player["FG%"] ? `<div class="stat"><b>${player["FG%"]}</b>FG%</div>` : ""}
+          </div>
+        </div>
+      </div>
+      ${player["Why He's Here"] ? `<section><h3>Why he's here</h3><p>${player["Why He's Here"]}</p></section>` : ""}
+      ${player["Fit With Brief"] ? `<section><h3>Fit with the brief</h3><p>${player["Fit With Brief"]}</p></section>` : ""}
+      ${player["Key Strengths"] ? `<section><h3>Key strengths</h3><p>${player["Key Strengths"]}</p></section>` : ""}
+      ${player["Watch / Concerns"] ? `<section><h3>Watch / concerns</h3><p>${player["Watch / Concerns"]}</p></section>` : ""}
+      <div class="actions">
+        ${actionLink("Watch film", player["Film URL"], true)}
+        ${actionLink("Highlights", player["Highlight URL"], false)}
+        ${actionLink("External profile", player["External Profile URL"], false)}
+      </div>
+    </div>
+  `;
+  overlay.classList.remove("hidden");
+}
+function closeDossier(){ document.getElementById("dossier-overlay").classList.add("hidden"); }
+document.getElementById("dossier-overlay").addEventListener("click", function(e){
+  if(e.target.id === "dossier-overlay") closeDossier();
+});
+
+const DEMO_BRIEF = {
+  "Report Title":"Bonn - Forward Sourcing Board","Team":"Telekom Baskets Bonn","League":"BBL",
+  "Country":"Germany","Season":"2026-27","Positions Needed":"Power forward, small-ball 4/5",
+  "Published Brief":"Bonn is looking for a switchable power forward who can defend in space and space the floor on offense.",
+  "Publish":"YES","Branding_Mode":"DARK_HORSE","Prepared By Line":"Prepared by Dark Horse Hoops"
+};
+const DEMO_PLAYERS = [
+  { "Player ID":"P01","Name":"Example Player One","Current Team":"Example BC","League":"EuroCup","Age":"23","Height":"6'9\"",
+    "Position":"PF","Role":"Stretch-4","Archetype":"Switchable floor-spacer","PPG":"12.4","RPG":"6.1","APG":"1.8","FG%":"0.481",
+    "Why He's Here":"Fits the switchable-4 need directly; production translates from a lower defensive-pace league.",
+    "Fit With Brief":"Matches Bonn's spacing need; defensive versatility is the swing skill worth verifying on film.",
+    "Key Strengths":"Floor spacing, defensive versatility, low-maintenance personality.",
+    "Watch / Concerns":"Rebounding rate; has never played a full 30+ minute role.",
+    "Priority":"High","Category":"Primary Target" },
+  { "Player ID":"P02","Name":"Example Player Two","Current Team":"Example United","League":"ProA","Age":"21","Height":"6'10\"",
+    "Position":"C","Role":"Rim protector","Archetype":"Vertical spacer","PPG":"9.8","RPG":"7.4","APG":"0.9","FG%":"0.552",
+    "Why He's Here":"Adds rim protection Bonn currently lacks off the bench.",
+    "Fit With Brief":"Less proven offensively, but the defensive fit is immediate.",
+    "Key Strengths":"Shot blocking, offensive rebounding.",
+    "Watch / Concerns":"Limited range, foul rate is high.",
+    "Priority":"Medium","Category":"Depth Option" },
+  { "Player ID":"P03","Name":"Example Player Three","Current Team":"Example Club","League":"BBL","Age":"25","Height":"6'8\"",
+    "Position":"PF","Role":"Small-ball 5","Archetype":"Switch-everything wing-big","PPG":"14.1","RPG":"5.5","APG":"2.6","FG%":"0.463",
+    "Why He's Here":"Already produces in this exact league at a high level.",
+    "Fit With Brief":"The most complete fit on paper; asking price is the open question.",
+    "Key Strengths":"Switchability, secondary playmaking, proven in-league.",
+    "Watch / Concerns":"Contract situation unclear; may be out of budget range.",
+    "Priority":"High","Category":"Primary Target" }
+];
+
+(function main(){
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("id");
+
+  if(!id){
+    applyBranding(DEMO_BRIEF);
+    renderBoard(DEMO_BRIEF, DEMO_PLAYERS, { demo:true });
+    return;
+  }
+
+  showState("DARK HORSE HOOPS", "Loading the board...", "Pulling the latest information.");
+
+  let decoded;
+  try{ decoded = decodeBoardId(id); }
+  catch(e){
+    showState("DARK HORSE HOOPS", "This link isn't valid.", "Double-check the link you were sent, or ask for a new one.");
+    return;
+  }
+
+  const briefUrl = csvUrl(decoded.key, decoded.briefGid);
+  const playersUrl = csvUrl(decoded.key, decoded.playersGid);
+
+  Promise.all([fetchCsvRows(briefUrl), fetchCsvRows(playersUrl)])
+    .then(function(results){
+      const brief = parseBrief(results[0]);
+      if(brief["Publish"].trim().toUpperCase() !== "YES"){
+        showState("DARK HORSE HOOPS", "This board isn't available.", "It may not be published yet, or the link may have been retired.");
+        return;
+      }
+      const players = parsePlayers(results[1]);
+      applyBranding(brief);
+      renderBoard(brief, players, {});
+    })
+    .catch(function(e){
+      showState("DARK HORSE HOOPS", "Something went wrong loading this board.", "Try again in a few minutes. If it keeps happening, the underlying sheet may need attention.");
+    });
+})();
+</script>
+</body>
+</html>
