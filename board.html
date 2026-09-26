@@ -17,6 +17,7 @@
   html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Oswald',sans-serif;}
   #app{min-height:100vh;}
   .hidden{display:none !important;}
+  .view-hidden{display:none !important;}
 
   #state-screen{
     min-height:100vh; display:flex; align-items:center; justify-content:center;
@@ -36,7 +37,12 @@
   #header .positions{ margin-top:16px; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--ink-dim); letter-spacing:.5px; }
   #header .positions b{ color:var(--ink); font-weight:500; }
 
-  #grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:28px; padding:12px 24px 64px; max-width:1240px; margin:0 auto; }
+  .view-toggle{ display:flex; justify-content:center; gap:8px; margin:0 0 32px; }
+  .view-toggle button{ font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1px; text-transform:uppercase; padding:10px 24px; border-radius:8px; border:1px solid var(--line); background:transparent; color:var(--ink-dim); cursor:pointer; transition:all .25s ease; }
+  .view-toggle button.active{ background:linear-gradient(90deg,var(--accent-1),var(--accent-2)); color:#0a0b0d; font-weight:600; border-color:transparent; }
+  .view-toggle button:hover:not(.active){ color:var(--ink); border-color:rgba(255,255,255,0.2); }
+
+  #grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:28px; padding:12px 24px 64px; max-width:1240px; margin:0 auto; transition:opacity .25s ease; }
 
   .card{
     position:relative; border-radius:14px; background:var(--panel);
@@ -71,6 +77,57 @@
   .card .readout b{ color:var(--ink); font-weight:500; }
   .card .meter{ margin-top:9px; height:4px; border-radius:2px; background:#23262c; overflow:hidden; }
   .card .meter i{ display:block; height:100%; background:linear-gradient(90deg,var(--accent-1),var(--accent-2)); }
+
+  /* ===== COMPARE / HEATMAP VIEW ===== */
+  #compare-wrap{ max-width:1240px; margin:0 auto; padding:0 24px 64px; }
+  .compare-controls{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; margin-bottom:18px; }
+  .chip-row{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.5px; text-transform:uppercase; padding:7px 14px; border-radius:20px; border:1px solid var(--line); background:var(--panel); color:var(--ink-dim); cursor:pointer; user-select:none; }
+  .chip.active{ border-color:var(--accent-1); color:var(--gold-hi); background:rgba(217,169,79,0.12); }
+
+  .cat-tabs{ display:flex; flex-wrap:wrap; gap:4px; margin-bottom:16px; border-bottom:1px solid var(--line); padding-bottom:0; }
+  .cat-tab{ font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:1px; text-transform:uppercase; padding:10px 16px; border-radius:6px 6px 0 0; border:none; background:transparent; color:var(--ink-dim); cursor:pointer; }
+  .cat-tab.active{ color:var(--ink); background:var(--panel); box-shadow:inset 0 -2px 0 var(--accent-2); }
+  .cat-tab:hover:not(.active){ color:var(--ink); }
+
+  .cmp-table-scroll{ overflow-x:auto; border-radius:12px; border:1px solid var(--line); background:var(--panel); }
+  table.cmp{ border-collapse:collapse; width:100%; min-width:640px; }
+  table.cmp th, table.cmp td{ padding:11px 16px; text-align:left; white-space:nowrap; }
+  table.cmp thead th{ font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:1px; text-transform:uppercase; color:var(--ink-dim); border-bottom:1px solid var(--line); cursor:pointer; position:sticky; top:0; background:var(--panel); z-index:2; }
+  table.cmp thead th:hover{ color:var(--ink); }
+  table.cmp thead th.sorted{ color:var(--gold-hi); }
+  table.cmp td.identity, table.cmp th.identity{ position:sticky; left:0; background:var(--panel); z-index:3; border-right:1px solid var(--line); }
+  table.cmp tbody tr{ cursor:pointer; }
+  table.cmp tbody tr:hover td{ filter:brightness(1.08); }
+  .cmp-player{ display:flex; align-items:center; gap:10px; min-width:170px; }
+  .cmp-player .thumb{ width:34px; height:34px; border-radius:8px; overflow:hidden; background:#21242b; flex-shrink:0; position:relative; }
+  .cmp-player .thumb img{ width:100%; height:100%; object-fit:cover; }
+  .cmp-player .thumb svg{ position:absolute; bottom:-3px; left:50%; transform:translateX(-50%); width:65%; }
+  .cmp-player .thumb svg path{ fill:#3a3d44; }
+  .cmp-player .name{ font-family:'Oswald',sans-serif; font-size:13.5px; font-weight:600; color:var(--ink); }
+  .cmp-player .sub{ font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--ink-dim); }
+  .metric-cell{ font-family:'JetBrains Mono',monospace; font-size:12.5px; border-radius:6px; }
+  .metric-cell .dash{ color:var(--ink-dim); }
+
+  .mobile-picker{ display:none; }
+  .picker-note{ font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:.5px; text-transform:uppercase; color:var(--ink-dim); margin-bottom:14px; }
+  @media (max-width:720px){
+    table.cmp{ display:none; }
+    .cmp-table-scroll{ border:none; background:transparent; }
+    .mobile-picker{ display:block; }
+    .picker-list{ display:flex; flex-direction:column; gap:8px; margin-bottom:6px; }
+    .picker-row{ display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid var(--line); border-radius:10px; background:var(--panel); cursor:pointer; }
+    .picker-row input{ width:18px; height:18px; accent-color:var(--accent-1); flex-shrink:0; }
+    .picker-row.disabled{ opacity:.35; }
+    .picker-row .name{ font-family:'Oswald',sans-serif; font-size:14px; font-weight:600; color:var(--ink); }
+    .picker-row .sub{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--ink-dim); }
+    .stack-card{ border:1px solid var(--line); border-radius:12px; background:var(--panel); padding:16px 18px; margin-bottom:16px; }
+    .stack-card .name{ font-family:'Oswald',sans-serif; font-size:17px; font-weight:600; }
+    .stack-card .sub{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-dim); margin-bottom:10px; }
+    .stack-row{ display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--line); font-size:13px; }
+    .stack-row span{ color:var(--ink-dim); font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:.5px; }
+    .stack-row b{ font-family:'JetBrains Mono',monospace; font-weight:500; }
+  }
 
   #dossier-overlay{ position:fixed; inset:0; background:rgba(6,7,8,0.88); backdrop-filter:blur(6px); z-index:50;
     display:flex; align-items:flex-start; justify-content:center; overflow-y:auto; padding:40px 16px; }
@@ -115,7 +172,9 @@
 
 <div id="app" class="hidden">
   <div id="header"></div>
+  <div id="view-toggle" class="view-toggle hidden"></div>
   <div id="grid"></div>
+  <div id="compare-wrap" class="view-hidden"></div>
 </div>
 
 <div id="dossier-overlay" class="hidden"></div>
@@ -128,6 +187,9 @@ const BRIEF_FIELDS = [
   "Client Logo URL","Secondary Client Mark URL","Team Photography URL",
   "Arena / Background Image URL","Header / Hero Image URL","Texture / Background Asset URL"
 ];
+// Reference list only (no longer used to filter) -- these are the fields Card/Dossier rendering
+// reads by name. Compare view reads whatever columns exist + are described in Metric Config instead,
+// so new metrics never require a code change here.
 const PLAYER_FIELDS = [
   "Player ID","Name","Current Team","League","Country","Nationality","Age","Height",
   "Position","Secondary Position","Role","Archetype","PPG","RPG","APG","FG%",
@@ -135,6 +197,10 @@ const PLAYER_FIELDS = [
   "Player Image URL","Player Action Image URL","Player Cutout URL",
   "Film URL","Highlight URL","External Profile URL","Priority","Category"
 ];
+
+const METRIC_FORMATS = new Set(["PERCENT","DECIMAL","COUNT","FEET_INCHES","MEASUREMENT"]);
+const METRIC_DIRECTIONS = new Set(["HIGHER_IS_BETTER","LOWER_IS_BETTER","NEUTRAL"]);
+const CATEGORY_ORDER = ["PHYSICAL","ROLE / USAGE","SCORING","SHOOTING","PLAYMAKING","REBOUNDING","DEFENSE"];
 
 const SILHOUETTE_PATH = "M50 8c8 0 14 6 14 14s-6 14-14 14-14-6-14-14 6-14 14-14zm-6 30h12c10 0 18 7 20 17l6 38-14 4-4-26-3 60h-9l-2-46-2 46h-9l-3-60-4 26-14-4 6-38c2-10 10-17 20-17z";
 function silhouetteSVG(cls){
@@ -146,10 +212,10 @@ function decodeBoardId(id){
   const padded = b64 + "===".slice((b64.length + 3) % 4);
   const raw = atob(padded);
   const parts = raw.split("|");
-  if(parts.length !== 3) throw new Error("Malformed board id");
-  const [key, briefGid, playersGid] = parts;
+  if(parts.length !== 3 && parts.length !== 4) throw new Error("Malformed board id");
+  const key = parts[0], briefGid = parts[1], playersGid = parts[2], metricsGid = parts[3] || null;
   if(!key || !briefGid || !playersGid) throw new Error("Malformed board id");
-  return { key, briefGid, playersGid };
+  return { key, briefGid, playersGid, metricsGid };
 }
 function csvUrl(key, gid){
   return `https://docs.google.com/spreadsheets/d/e/${key}/pub?gid=${gid}&single=true&output=csv`;
@@ -176,6 +242,11 @@ function parseBrief(rows){
   return brief;
 }
 
+// Keeps every column present on Players - Published, not just the fixed whitelist above.
+// Card/Dossier rendering still only ever reads the named fields it knows about; Compare view
+// uses whatever additional columns exist and are described in Metric Config. The real security
+// boundary is what Skyler chooses to formula-mirror onto the Published tab in Google Sheets --
+// that part is unchanged.
 function parsePlayers(rows){
   if(!rows.length) return [];
   const header = rows[0].map(function(h){ return String(h || "").trim(); });
@@ -186,11 +257,128 @@ function parsePlayers(rows){
     const obj = {};
     header.forEach(function(h, idx){ obj[h] = row[idx] !== undefined ? row[idx] : ""; });
     if(!obj["Name"]) continue;
-    const player = {};
-    PLAYER_FIELDS.forEach(function(f){ player[f] = obj[f] || ""; });
-    out.push(player);
+    out.push(obj);
   }
   return out;
+}
+
+function parseMetricConfig(rows){
+  if(!rows || !rows.length) return [];
+  const header = rows[0].map(function(h){ return String(h || "").trim(); });
+  const idx = {};
+  header.forEach(function(h, i){ idx[h] = i; });
+  const required = ["Metric Key","Display Name","Category","Format","Direction","Include in Heatmap"];
+  if(required.some(function(r){ return !(r in idx); })) return [];
+  const out = [];
+  for(let i = 1; i < rows.length; i++){
+    const row = rows[i];
+    if(!row) continue;
+    const key = String(row[idx["Metric Key"]] || "").trim();
+    const format = String(row[idx["Format"]] || "").trim().toUpperCase();
+    const direction = String(row[idx["Direction"]] || "").trim().toUpperCase();
+    const include = String(row[idx["Include in Heatmap"]] || "").trim().toUpperCase();
+    // guards against blank/instructional rows: a real metric row always has a valid Format + Direction
+    if(!key || !METRIC_FORMATS.has(format) || !METRIC_DIRECTIONS.has(direction)) continue;
+    if(include !== "YES") continue;
+    out.push({
+      key: key,
+      display: String(row[idx["Display Name"]] || key).trim(),
+      category: String(row[idx["Category"]] || "OTHER").trim() || "OTHER",
+      format: format,
+      direction: direction
+    });
+  }
+  return out;
+}
+
+function usableMetrics(metricDefs, players){
+  if(!players.length) return [];
+  const cols = {};
+  Object.keys(players[0]).forEach(function(k){ cols[k] = true; });
+  return metricDefs.filter(function(m){ return cols[m.key]; });
+}
+
+function parseFeetInches(str){
+  if(str === undefined || str === null || String(str).trim() === "") return null;
+  const s = String(str).trim();
+  const m = s.match(/(\d+)\s*'\s*(\d+(?:\.\d+)?)/);
+  if(m) return parseInt(m[1],10) * 12 + parseFloat(m[2]);
+  const n = parseFloat(s);
+  return isNaN(n) ? null : n;
+}
+
+function numericValue(raw, format){
+  if(raw === undefined || raw === null || String(raw).trim() === "") return null;
+  const s = String(raw).trim();
+  if(format === "FEET_INCHES") return parseFeetInches(s);
+  if(format === "PERCENT"){
+    const n = parseFloat(s.replace(/%/g,""));
+    if(isNaN(n)) return null;
+    return n <= 1 ? n * 100 : n; // supports either 0.481 or 48.1 style source values
+  }
+  const n = parseFloat(s.replace(/,/g,""));
+  return isNaN(n) ? null : n;
+}
+
+function displayValue(raw, format){
+  if(raw === undefined || raw === null || String(raw).trim() === "") return "—";
+  const s = String(raw).trim();
+  if(format === "PERCENT"){
+    const n = numericValue(raw, format);
+    return n === null ? "—" : (Math.round(n * 10) / 10) + "%";
+  }
+  if(format === "FEET_INCHES") return s;
+  if(format === "COUNT"){
+    const n = parseFloat(s);
+    return isNaN(n) ? s : String(Math.round(n));
+  }
+  if(format === "DECIMAL"){
+    const n = parseFloat(s);
+    return isNaN(n) ? s : String(Math.round(n * 10) / 10);
+  }
+  return s;
+}
+
+function categoriesInOrder(metrics){
+  const seen = [];
+  metrics.forEach(function(m){ if(seen.indexOf(m.category) === -1) seen.push(m.category); });
+  return seen.sort(function(a, b){
+    const ia = CATEGORY_ORDER.indexOf(a), ib = CATEGORY_ORDER.indexOf(b);
+    if(ia === -1 && ib === -1) return 0;
+    if(ia === -1) return 1;
+    if(ib === -1) return -1;
+    return ia - ib;
+  });
+}
+
+function uniquePositions(players){
+  const seen = [];
+  players.forEach(function(p){
+    const v = String(p["Position"] || "").trim();
+    if(v && seen.indexOf(v) === -1) seen.push(v);
+  });
+  return seen;
+}
+
+function computeIntensities(players, metric){
+  const vals = players.map(function(p){ return numericValue(p[metric.key], metric.format); });
+  if(metric.direction === "NEUTRAL") return vals.map(function(){ return null; });
+  const nums = vals.filter(function(v){ return v !== null; });
+  if(!nums.length) return vals.map(function(){ return null; });
+  const min = Math.min.apply(null, nums), max = Math.max.apply(null, nums);
+  return vals.map(function(v){
+    if(v === null) return null;
+    if(max === min) return 0.5;
+    let t = (v - min) / (max - min);
+    if(metric.direction === "LOWER_IS_BETTER") t = 1 - t;
+    return t;
+  });
+}
+
+function intensityStyle(t){
+  if(t === null || t === undefined) return "";
+  const alpha = 0.12 + t * 0.55;
+  return `background:linear-gradient(90deg, rgba(217,169,79,${alpha.toFixed(2)}), rgba(107,255,107,${(alpha*0.9).toFixed(2)}));`;
 }
 
 function showState(mark, title, body){
@@ -257,6 +445,193 @@ function renderCard(player, index){
   return div;
 }
 
+// ===== state for the Compare view =====
+let ALL_PLAYERS = [];
+let METRIC_DEFS = [];
+let VIEW = "cards";
+let CURRENT_CATEGORY = null;
+let CURRENT_POSITION = "ALL";
+let SORT_KEY = null;
+let SORT_DIR = "desc";
+let MOBILE_SELECTED = new Set();
+
+function renderViewToggle(hasCompare){
+  const el = document.getElementById("view-toggle");
+  if(!hasCompare){ el.classList.add("hidden"); el.innerHTML = ""; return; }
+  el.classList.remove("hidden");
+  el.innerHTML = `
+    <button data-view="cards" class="${VIEW === 'cards' ? 'active' : ''}">Cards</button>
+    <button data-view="compare" class="${VIEW === 'compare' ? 'active' : ''}">Compare</button>
+  `;
+  el.querySelectorAll("button").forEach(function(btn){
+    btn.addEventListener("click", function(){ setView(btn.dataset.view); });
+  });
+}
+
+function setView(v){
+  VIEW = v;
+  document.getElementById("grid").classList.toggle("view-hidden", v !== "cards");
+  document.getElementById("compare-wrap").classList.toggle("view-hidden", v !== "compare");
+  document.querySelectorAll("#view-toggle button").forEach(function(b){
+    b.classList.toggle("active", b.dataset.view === v);
+  });
+  if(v === "compare") renderCompare();
+}
+
+function filteredPlayers(){
+  if(CURRENT_POSITION === "ALL") return ALL_PLAYERS;
+  return ALL_PLAYERS.filter(function(p){ return String(p["Position"] || "").trim() === CURRENT_POSITION; });
+}
+
+function sortedIndices(players, catMetrics){
+  const idxs = players.map(function(_, i){ return i; });
+  if(!SORT_KEY) return idxs;
+  const metric = catMetrics.filter(function(m){ return m.key === SORT_KEY; })[0]
+    || METRIC_DEFS.filter(function(m){ return m.key === SORT_KEY; })[0];
+  if(!metric) return idxs;
+  return idxs.slice().sort(function(a, b){
+    const va = numericValue(players[a][SORT_KEY], metric.format);
+    const vb = numericValue(players[b][SORT_KEY], metric.format);
+    if(va === null && vb === null) return 0;
+    if(va === null) return 1;
+    if(vb === null) return -1;
+    return SORT_DIR === "desc" ? vb - va : va - vb;
+  });
+}
+
+function renderCompareRows(players, catMetrics){
+  const order = sortedIndices(players, catMetrics);
+  const intensityMap = {};
+  catMetrics.forEach(function(m){ intensityMap[m.key] = computeIntensities(players, m); });
+  return order.map(function(i){
+    const p = players[i];
+    const imgUrl = pickImage(p, ["Player Cutout URL","Player Action Image URL","Player Image URL"]);
+    const cells = catMetrics.map(function(m){
+      const t = intensityMap[m.key][i];
+      const dv = displayValue(p[m.key], m.format);
+      return `<td class="metric-cell" style="${intensityStyle(t)}"><span class="${dv === '—' ? 'dash' : ''}">${dv}</span></td>`;
+    }).join("");
+    return `
+      <tr data-idx="${i}">
+        <td class="identity">
+          <div class="cmp-player">
+            <div class="thumb">${imgUrl ? `<img src="${imgUrl}" onerror="this.remove()">` : silhouetteSVG("")}</div>
+            <div>
+              <div class="name">${p["Name"]}</div>
+              <div class="sub">${[p["Position"], p["Current Team"]].filter(Boolean).join(" &middot; ")}</div>
+            </div>
+          </div>
+        </td>
+        ${cells}
+      </tr>
+    `;
+  }).join("");
+}
+
+function renderMobilePicker(players, catMetrics){
+  if(!MOBILE_SELECTED.size){
+    players.slice(0, 3).forEach(function(_, i){ MOBILE_SELECTED.add(i); });
+  }
+  const list = players.map(function(p, i){
+    const checked = MOBILE_SELECTED.has(i);
+    const disabled = !checked && MOBILE_SELECTED.size >= 4;
+    return `
+      <label class="picker-row ${disabled ? 'disabled' : ''}">
+        <input type="checkbox" data-idx="${i}" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''}>
+        <div>
+          <div class="name">${p["Name"]}</div>
+          <div class="sub">${[p["Position"], p["Current Team"]].filter(Boolean).join(" &middot; ")}</div>
+        </div>
+      </label>
+    `;
+  }).join("");
+
+  const selectedIdxs = players.map(function(_, i){ return i; }).filter(function(i){ return MOBILE_SELECTED.has(i); });
+  const stacks = selectedIdxs.map(function(i){
+    const p = players[i];
+    const rows = catMetrics.map(function(m){
+      return `<div class="stack-row"><span>${m.display}</span><b>${displayValue(p[m.key], m.format)}</b></div>`;
+    }).join("");
+    return `
+      <div class="stack-card" data-idx="${i}">
+        <div class="name">${p["Name"]}</div>
+        <div class="sub">${[p["Position"], p["Current Team"]].filter(Boolean).join(" &middot; ")}</div>
+        ${rows}
+      </div>
+    `;
+  }).join("");
+
+  return `
+    <div class="picker-note">Select up to 4 players to compare</div>
+    <div class="picker-list">${list}</div>
+    ${stacks}
+  `;
+}
+
+function wireMobilePicker(players){
+  document.querySelectorAll(".picker-row input").forEach(function(input){
+    input.addEventListener("change", function(){
+      const idx = Number(input.dataset.idx);
+      if(input.checked) MOBILE_SELECTED.add(idx); else MOBILE_SELECTED.delete(idx);
+      renderCompare();
+    });
+  });
+  document.querySelectorAll(".stack-card").forEach(function(card){
+    card.addEventListener("click", function(){ openDossier(players[Number(card.dataset.idx)]); });
+  });
+}
+
+function renderCompare(){
+  const wrap = document.getElementById("compare-wrap");
+  const metrics = METRIC_DEFS;
+  const cats = categoriesInOrder(metrics);
+  if(!CURRENT_CATEGORY || cats.indexOf(CURRENT_CATEGORY) === -1) CURRENT_CATEGORY = cats[0];
+  const positions = uniquePositions(ALL_PLAYERS);
+  const players = filteredPlayers();
+  const catMetrics = metrics.filter(function(m){ return m.category === CURRENT_CATEGORY; });
+
+  wrap.innerHTML = `
+    <div class="compare-controls">
+      <div class="chip-row" id="position-chips">
+        <span class="chip ${CURRENT_POSITION === 'ALL' ? 'active' : ''}" data-pos="ALL">All</span>
+        ${positions.map(function(p){ return `<span class="chip ${CURRENT_POSITION === p ? 'active' : ''}" data-pos="${p}">${p}</span>`; }).join("")}
+      </div>
+    </div>
+    <div class="cat-tabs" id="cat-tabs">
+      ${cats.map(function(c){ return `<button class="cat-tab ${c === CURRENT_CATEGORY ? 'active' : ''}" data-cat="${c}">${c}</button>`; }).join("")}
+    </div>
+    <div class="cmp-table-scroll">
+      <table class="cmp">
+        <thead><tr>
+          <th class="identity">Player</th>
+          ${catMetrics.map(function(m){ return `<th data-key="${m.key}" class="${SORT_KEY === m.key ? 'sorted' : ''}">${m.display}</th>`; }).join("")}
+        </tr></thead>
+        <tbody>${renderCompareRows(players, catMetrics)}</tbody>
+      </table>
+    </div>
+    <div class="mobile-picker">${renderMobilePicker(players, catMetrics)}</div>
+  `;
+
+  wrap.querySelectorAll("#position-chips .chip").forEach(function(chip){
+    chip.addEventListener("click", function(){ CURRENT_POSITION = chip.dataset.pos; renderCompare(); });
+  });
+  wrap.querySelectorAll(".cat-tab").forEach(function(tab){
+    tab.addEventListener("click", function(){ CURRENT_CATEGORY = tab.dataset.cat; SORT_KEY = null; renderCompare(); });
+  });
+  wrap.querySelectorAll("table.cmp thead th[data-key]").forEach(function(th){
+    th.addEventListener("click", function(){
+      const key = th.dataset.key;
+      if(SORT_KEY === key){ SORT_DIR = SORT_DIR === "desc" ? "asc" : "desc"; }
+      else { SORT_KEY = key; SORT_DIR = "desc"; }
+      renderCompare();
+    });
+  });
+  wrap.querySelectorAll("table.cmp tbody tr[data-idx]").forEach(function(tr){
+    tr.addEventListener("click", function(){ openDossier(players[Number(tr.dataset.idx)]); });
+  });
+  wireMobilePicker(players);
+}
+
 function renderBoard(brief, players, opts){
   document.getElementById("state-screen").classList.add("hidden");
   document.getElementById("app").classList.remove("hidden");
@@ -264,6 +639,16 @@ function renderBoard(brief, players, opts){
   const grid = document.getElementById("grid");
   grid.innerHTML = "";
   players.forEach(function(p, i){ grid.appendChild(renderCard(p, i)); });
+
+  VIEW = "cards";
+  CURRENT_CATEGORY = null;
+  CURRENT_POSITION = "ALL";
+  SORT_KEY = null;
+  SORT_DIR = "desc";
+  MOBILE_SELECTED = new Set();
+  grid.classList.remove("view-hidden");
+  document.getElementById("compare-wrap").classList.add("view-hidden");
+  renderViewToggle(METRIC_DEFS.length > 0);
 }
 
 function actionLink(label, url, primary){
@@ -318,6 +703,7 @@ const DEMO_BRIEF = {
 };
 const DEMO_PLAYERS = [
   { "Player ID":"P01","Name":"Example Player One","Current Team":"Example BC","League":"EuroCup","Age":"23","Height":"6'9\"",
+    "Wingspan":"7'1\"","MPG":"26.4","Games":"27","3P%":"0.372","FT%":"0.81","SPG":"0.9","BPG":"0.7",
     "Position":"PF","Role":"Stretch-4","Archetype":"Switchable floor-spacer","PPG":"12.4","RPG":"6.1","APG":"1.8","FG%":"0.481",
     "Why He's Here":"Fits the switchable-4 need directly; production translates from a lower defensive-pace league.",
     "Fit With Brief":"Matches Bonn's spacing need; defensive versatility is the swing skill worth verifying on film.",
@@ -325,6 +711,7 @@ const DEMO_PLAYERS = [
     "Watch / Concerns":"Rebounding rate; has never played a full 30+ minute role.",
     "Priority":"High","Category":"Primary Target" },
   { "Player ID":"P02","Name":"Example Player Two","Current Team":"Example United","League":"ProA","Age":"21","Height":"6'10\"",
+    "Wingspan":"7'3\"","MPG":"19.8","Games":"24","3P%":"0.0","FT%":"0.64","SPG":"0.5","BPG":"1.6",
     "Position":"C","Role":"Rim protector","Archetype":"Vertical spacer","PPG":"9.8","RPG":"7.4","APG":"0.9","FG%":"0.552",
     "Why He's Here":"Adds rim protection Bonn currently lacks off the bench.",
     "Fit With Brief":"Less proven offensively, but the defensive fit is immediate.",
@@ -332,6 +719,7 @@ const DEMO_PLAYERS = [
     "Watch / Concerns":"Limited range, foul rate is high.",
     "Priority":"Medium","Category":"Depth Option" },
   { "Player ID":"P03","Name":"Example Player Three","Current Team":"Example Club","League":"BBL","Age":"25","Height":"6'8\"",
+    "Wingspan":"6'11\"","MPG":"29.1","Games":"31","3P%":"0.341","FT%":"0.77","SPG":"1.1","BPG":"0.4",
     "Position":"PF","Role":"Small-ball 5","Archetype":"Switch-everything wing-big","PPG":"14.1","RPG":"5.5","APG":"2.6","FG%":"0.463",
     "Why He's Here":"Already produces in this exact league at a high level.",
     "Fit With Brief":"The most complete fit on paper; asking price is the open question.",
@@ -339,12 +727,29 @@ const DEMO_PLAYERS = [
     "Watch / Concerns":"Contract situation unclear; may be out of budget range.",
     "Priority":"High","Category":"Primary Target" }
 ];
+const DEMO_METRIC_DEFS = [
+  {key:"Height",display:"HEIGHT",category:"PHYSICAL",format:"FEET_INCHES",direction:"NEUTRAL"},
+  {key:"Wingspan",display:"WINGSPAN",category:"PHYSICAL",format:"FEET_INCHES",direction:"NEUTRAL"},
+  {key:"Age",display:"AGE",category:"PHYSICAL",format:"DECIMAL",direction:"NEUTRAL"},
+  {key:"MPG",display:"MPG",category:"ROLE / USAGE",format:"DECIMAL",direction:"NEUTRAL"},
+  {key:"Games",display:"GAMES (SAMPLE)",category:"ROLE / USAGE",format:"COUNT",direction:"NEUTRAL"},
+  {key:"PPG",display:"PPG",category:"SCORING",format:"DECIMAL",direction:"HIGHER_IS_BETTER"},
+  {key:"FG%",display:"FG%",category:"SHOOTING",format:"PERCENT",direction:"HIGHER_IS_BETTER"},
+  {key:"3P%",display:"3P%",category:"SHOOTING",format:"PERCENT",direction:"HIGHER_IS_BETTER"},
+  {key:"FT%",display:"FT%",category:"SHOOTING",format:"PERCENT",direction:"HIGHER_IS_BETTER"},
+  {key:"APG",display:"APG",category:"PLAYMAKING",format:"DECIMAL",direction:"HIGHER_IS_BETTER"},
+  {key:"RPG",display:"RPG",category:"REBOUNDING",format:"DECIMAL",direction:"HIGHER_IS_BETTER"},
+  {key:"SPG",display:"SPG",category:"DEFENSE",format:"DECIMAL",direction:"HIGHER_IS_BETTER"},
+  {key:"BPG",display:"BPG",category:"DEFENSE",format:"DECIMAL",direction:"HIGHER_IS_BETTER"}
+];
 
 (function main(){
   const params = new URLSearchParams(window.location.search);
   const id = params.get("id");
 
   if(!id){
+    ALL_PLAYERS = DEMO_PLAYERS;
+    METRIC_DEFS = usableMetrics(DEMO_METRIC_DEFS, DEMO_PLAYERS);
     applyBranding(DEMO_BRIEF);
     renderBoard(DEMO_BRIEF, DEMO_PLAYERS, { demo:true });
     return;
@@ -370,8 +775,19 @@ const DEMO_PLAYERS = [
         return;
       }
       const players = parsePlayers(results[1]);
-      applyBranding(brief);
-      renderBoard(brief, players, {});
+
+      function finish(metricRows){
+        ALL_PLAYERS = players;
+        METRIC_DEFS = usableMetrics(parseMetricConfig(metricRows || []), players);
+        applyBranding(brief);
+        renderBoard(brief, players, {});
+      }
+
+      if(decoded.metricsGid){
+        fetchCsvRows(csvUrl(decoded.key, decoded.metricsGid)).then(finish).catch(function(){ finish([]); });
+      } else {
+        finish([]);
+      }
     })
     .catch(function(e){
       showState("DARK HORSE HOOPS", "Something went wrong loading this board.", "Try again in a few minutes. If it keeps happening, the underlying sheet may need attention.");
