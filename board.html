@@ -28,7 +28,11 @@
   #state-screen p{ color:var(--ink-dim); font-size:15px; line-height:1.6; margin:0; }
   #state-screen .mark{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--gold); letter-spacing:2px; text-transform:uppercase; margin-bottom:14px; }
 
-  #header{ padding:56px 24px 28px; text-align:center; background:radial-gradient(circle at 50% 0%,#181a1f 0%,var(--bg) 60%); }
+  #header{ padding:56px 24px 28px; text-align:center; background:radial-gradient(circle at 50% 0%,#181a1f 0%,var(--bg) 60%); background-size:cover; background-position:center; }
+  #header .brand-row{ display:flex; align-items:center; justify-content:center; gap:14px; margin-bottom:22px; }
+  #header .brand-row img{ max-height:44px; max-width:180px; object-fit:contain; }
+  #header .brand-row .dh-mark{ max-height:20px; max-width:120px; opacity:.85; }
+  #header .brand-row .brand-sep{ color:var(--ink-dim); font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:1px; text-transform:uppercase; }
   #header .prepared{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--ink-dim); margin-bottom:10px; }
   #header .demo-flag{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:1px; color:var(--gold-hi); border:1px solid rgba(217,169,79,0.4); padding:3px 10px; border-radius:3px; margin-bottom:14px; }
   #header h1{ font-family:'Bebas Neue',sans-serif; font-size:clamp(30px,6vw,52px); letter-spacing:1px; margin:0 0 8px; }
@@ -401,8 +405,28 @@ function handleImgError(img, cls){
 function renderHeader(brief, opts){
   const el = document.getElementById("header");
   const demo = opts && opts.demo;
+
+  const isClientBranded = brief["Branding_Mode"] === "CLIENT";
+  const clientLogo = isClientBranded && isLikelyImageUrl(brief["Client Logo URL"]) ? brief["Client Logo URL"].trim() : null;
+  const dhLogo = isLikelyImageUrl(brief["Dark Horse Logo URL"]) ? brief["Dark Horse Logo URL"].trim() : null;
+  const showBrandRow = isClientBranded && clientLogo;
+
+  const heroUrl = isLikelyImageUrl(brief["Header / Hero Image URL"]) ? brief["Header / Hero Image URL"].trim()
+    : (isLikelyImageUrl(brief["Arena / Background Image URL"]) ? brief["Arena / Background Image URL"].trim() : null);
+  if(heroUrl){
+    el.style.backgroundImage = `linear-gradient(180deg, rgba(10,11,13,0.6), rgba(10,11,13,0.94)), url("${heroUrl}")`;
+  } else {
+    el.style.backgroundImage = "";
+  }
+
   el.innerHTML = `
     ${demo ? '<div class="demo-flag">DEMO PREVIEW &mdash; NO LIVE SHEET LOADED</div><br>' : ''}
+    ${showBrandRow ? `
+      <div class="brand-row">
+        <img src="${clientLogo}" alt="" onerror="this.parentElement.remove()">
+        ${dhLogo ? `<span class="brand-sep">&times;</span><img class="dh-mark" src="${dhLogo}" alt="" onerror="this.remove()">` : ""}
+      </div>
+    ` : ""}
     <div class="prepared">${brief["Prepared By Line"] || "Prepared by Dark Horse Hoops"}</div>
     <h1>${brief["Report Title"] || "Dark Horse Sourcing Board"}</h1>
     <div class="sub">${[brief["Team"], brief["League"], brief["Country"], brief["Season"]].filter(Boolean).join(" &middot; ")}</div>
