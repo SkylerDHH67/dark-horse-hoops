@@ -219,11 +219,21 @@ function decodeBoardId(id){
   const raw = atob(padded);
   const parts = raw.split("|");
   if(parts.length !== 3) throw new Error("Malformed board id");
-  const [key, briefGid, playersGid] = parts;
-  if(!key || !briefGid || !playersGid) throw new Error("Malformed board id");
-  return { key, briefGid, playersGid };
+  const [rawKey, briefGid, playersGid] = parts;
+  if(!rawKey || !briefGid || !playersGid) throw new Error("Malformed board id");
+  // rawKey is either "N:<spreadsheetId>" (normal Sheets link), "P:<publishKey>"
+  // ("Publish to web" link), or -- for board links generated before this
+  // distinction existed -- a bare publish key with no prefix at all.
+  const typeMatch = rawKey.match(/^([NP]):(.+)$/);
+  const type = typeMatch ? typeMatch[1] : "P";
+  const key = typeMatch ? typeMatch[2] : rawKey;
+  if(!key) throw new Error("Malformed board id");
+  return { type, key, briefGid, playersGid };
 }
-function csvUrl(key, gid){
+function csvUrl(type, key, gid){
+  if(type === "N"){
+    return `https://docs.google.com/spreadsheets/d/${key}/export?format=csv&gid=${gid}`;
+  }
   return `https://docs.google.com/spreadsheets/d/e/${key}/pub?gid=${gid}&single=true&output=csv`;
 }
 
@@ -720,8 +730,8 @@ const DEMO_PLAYERS = [
     return;
   }
 
-  const briefUrl = csvUrl(decoded.key, decoded.briefGid);
-  const playersUrl = csvUrl(decoded.key, decoded.playersGid);
+  const briefUrl = csvUrl(decoded.type, decoded.key, decoded.briefGid);
+  const playersUrl = csvUrl(decoded.type, decoded.key, decoded.playersGid);
 
   Promise.all([fetchCsvRows(briefUrl), fetchCsvRows(playersUrl)])
     .then(function(results){

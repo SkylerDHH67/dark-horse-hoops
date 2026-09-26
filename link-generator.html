@@ -35,17 +35,18 @@
 <div class="wrap">
   <div class="mark">DARK HORSE HOOPS &middot; INTERNAL TOOL</div>
   <h1>Board link generator</h1>
-  <p class="lede">Turns your published Google Sheet links into one darkhorsehoops.net board link. This page is private &mdash; it isn't linked from the public site. Bookmark it for your own use.</p>
+  <p class="lede">Turns your Google Sheet tab links into one darkhorsehoops.net board link. This page is private &mdash; it isn't linked from the public site. Bookmark it for your own use.</p>
 
   <div class="note">
-    Before you paste anything: in each Sheet, use <b>File &rarr; Share &rarr; Publish to web</b> and publish the <b>individual tab</b> (not "Entire document") for <b>Report Brief - Published</b> and <b>Players - Published</b>, each as CSV. Publishing individual tabs, rather than the whole document, is what keeps your Internal tabs from ever being reachable on the web at all.
+    Before you paste anything: the Sheet must be shared as <b>Anyone with the link &rarr; Viewer</b> (Share button, top right). That makes the whole spreadsheet fetchable by anyone who has a link to any tab of it &mdash; including Internal tabs, if someone ever gets or guesses that tab's link. Keep anything you wouldn't want a stranger to see (Skyler Notes, Gemini prompts, etc.) in mind before sharing this way.<br><br>
+    Once it's shared, just open each tab (<b>Report Brief - Published</b> and <b>Players - Published</b>) and copy its normal address-bar URL &mdash; no "Publish to web" step needed. (Old-style "Publish to web" CSV links still work too, if you'd rather keep Internal tabs fully unreachable regardless of gid.)
   </div>
 
-  <label>Report Brief - Published tab &mdash; publish link</label>
-  <input type="text" id="brief-link" placeholder="https://docs.google.com/spreadsheets/d/e/2PACX-.../pub?gid=...&output=csv">
+  <label>Report Brief - Published tab &mdash; link</label>
+  <input type="text" id="brief-link" placeholder="https://docs.google.com/spreadsheets/d/.../edit?gid=...">
 
-  <label>Players - Published tab &mdash; publish link</label>
-  <input type="text" id="players-link" placeholder="https://docs.google.com/spreadsheets/d/e/2PACX-.../pub?gid=...&output=csv">
+  <label>Players - Published tab &mdash; link</label>
+  <input type="text" id="players-link" placeholder="https://docs.google.com/spreadsheets/d/.../edit?gid=...">
 
   <details class="advanced">
     <summary>Site address (only change this if darkhorsehoops.net isn't set up yet)</summary>
@@ -64,14 +65,36 @@
 </div>
 
 <script>
-function parsePublishLink(urlStr){
+function gidFromUrl(url){
+  const fromQuery = url.searchParams.get("gid");
+  if(fromQuery) return fromQuery;
+  const hash = url.hash.replace(/^#/, "");
+  const fromHash = new URLSearchParams(hash).get("gid");
+  return fromHash || null;
+}
+
+function parseSheetLink(urlStr){
   let url;
   try{ url = new URL(urlStr.trim()); }
   catch(e){ return null; }
-  const pathMatch = url.pathname.match(/\/spreadsheets\/d\/e\/([^\/]+)\/pub/);
-  const gid = url.searchParams.get("gid");
-  if(!pathMatch || !gid) return null;
-  return { key: pathMatch[1], gid: gid };
+
+  // Old-style "Publish to web" CSV link: /spreadsheets/d/e/{KEY}/pub
+  const pubMatch = url.pathname.match(/\/spreadsheets\/d\/e\/([^\/]+)\/pub/);
+  if(pubMatch){
+    const gid = url.searchParams.get("gid");
+    if(!gid) return null;
+    return { type: "P", key: pubMatch[1], gid: gid };
+  }
+
+  // Normal Sheets link: /spreadsheets/d/{SPREADSHEET_ID}/edit (or /view, or nothing after the id)
+  const normalMatch = url.pathname.match(/\/spreadsheets\/d\/([^\/]+)/);
+  if(normalMatch){
+    const gid = gidFromUrl(url);
+    if(!gid) return null;
+    return { type: "N", key: normalMatch[1], gid: gid };
+  }
+
+  return null;
 }
 
 function toBase64Url(str){
@@ -107,15 +130,19 @@ document.getElementById("generate-btn").addEventListener("click", function(){
     return;
   }
 
-  const brief = parsePublishLink(briefRaw);
-  const players = parsePublishLink(playersRaw);
+  const brief = parseSheetLink(briefRaw);
+  const players = parseSheetLink(playersRaw);
 
   if(!brief || !players){
-    showError("One of those links doesn't look like a Google Sheets \"Publish to web\" CSV link. It should look like: https://docs.google.com/spreadsheets/d/e/2PACX-.../pub?gid=123456&single=true&output=csv");
+    showError("One of those links doesn't look like a Google Sheets link with a tab (gid) on it. Paste the normal address-bar URL for that tab, or an old-style \"Publish to web\" CSV link.");
+    return;
+  }
+  if(brief.type !== players.type){
+    showError("Please paste the same kind of link for both tabs — either two normal Google Sheets links, or two \"Publish to web\" links, not a mix.");
     return;
   }
   if(brief.key !== players.key){
-    showError("These links appear to come from different Google Sheets. Make sure both are published from the same report's Sheet, then try again.");
+    showError("These links appear to come from different Google Sheets. Make sure both tabs are from the same report's Sheet, then try again.");
     return;
   }
   if(brief.gid === players.gid){
@@ -125,7 +152,7 @@ document.getElementById("generate-btn").addEventListener("click", function(){
 
   try{ localStorage.setItem("darkhorse_base_url", baseUrl); }catch(e){ /* ignore */ }
 
-  const payload = brief.key + "|" + brief.gid + "|" + players.gid;
+  const payload = brief.type + ":" + brief.key + "|" + brief.gid + "|" + players.gid;
   const id = toBase64Url(payload);
   const finalUrl = baseUrl + "/board.html?id=" + id;
 

@@ -10,29 +10,41 @@ this repo is just the display layer, and it never changes when a new client is a
 |---|---|
 | `index.html` | The public landing page at the domain root. Marketing/contact only, no client data. |
 | `board.html` | Renders one sourcing board. Reads a `?id=` link, decodes it, fetches the matching Google Sheet data, and displays it. With no `?id=`, it shows a built-in demo board. |
-| `link-generator.html` | Private tool. Turns two Google Sheet "publish to web" links into one board link. Not linked from the public site -- bookmark it directly. |
+| `link-generator.html` | Private tool. Turns two Google Sheet tab links into one board link. Not linked from the public site -- bookmark it directly. |
 | `CNAME` | Tells GitHub Pages this site should answer to darkhorsehoops.net. |
 
 ## How a board link actually works
 
 Every report lives in its own Google Sheet, duplicated from the Dark Horse report
-template. Two tabs in that sheet get published to the web as CSV: `Report Brief -
-Published` and `Players - Published`. `link-generator.html` takes those two
-published links, pulls out the shared spreadsheet key and each tab's `gid`, and
-packs `key|briefGid|playersGid` into one scrambled string -- that string is the
-`?id=` value in the final board link. `board.html` reverses that exact process:
-decode the id, rebuild the CSV URLs, fetch them, check `Publish = YES`, and render.
+template. `link-generator.html` reads the link to the `Report Brief - Published`
+tab and the `Players - Published` tab, pulls out the spreadsheet id/key and each
+tab's `gid`, and packs `type:key|briefGid|playersGid` into one scrambled string --
+that string is the `?id=` value in the final board link. `board.html` reverses
+that exact process: decode the id, rebuild the CSV URLs, fetch them, check
+`Publish = YES`, and render.
 
 There is no database and no directory of clients anywhere in this repo or on the
 web. Each link is self-contained. This is obscurity, not authentication. Anyone
 with a link can view that board indefinitely. Client A's link cannot be used to
 discover Client B.
 
-**Security-relevant step that must happen in Google Sheets, not here:** when
-publishing a report's tabs to the web, always publish the *individual tab*
-("Report Brief - Published" or "Players - Published" specifically), never
-"Entire document." Publishing the whole document would make the Internal tabs
-fetchable by anyone who guessed their `gid`, even though nothing links to them.
+**There are two ways to get CSV data out of the Sheet, and they have different
+security properties. Pick one, deliberately, per report:**
+
+- **Normal Sheets link (`type: "N"`).** Share the whole spreadsheet as *Anyone
+  with the link -> Viewer*, then just copy the normal address-bar URL for each
+  tab. Simplest to use, but once the whole file is link-shared, **every tab is
+  fetchable by URL if someone has or guesses its `gid`** -- Internal tabs
+  included. Only use this if there's nothing on the Internal tabs (Skyler
+  Notes, Gemini prompts, etc.) you'd mind a stranger seeing.
+- **"Publish to web" link (`type: "P"`).** File -> Share -> Publish to web,
+  publish the *individual tab* (never "Entire document"). More setup per
+  report, but Internal tabs stay completely unreachable regardless of anyone
+  guessing a `gid`, because they were never published at all.
+
+`link-generator.html` accepts either kind of link and auto-detects which one
+you pasted. Mixing the two types across the Brief and Players link for the same
+report isn't allowed -- pick one approach per report.
 
 ## Adding a new client report
 
@@ -41,10 +53,11 @@ No code changes, ever. The steps:
 1. Duplicate the Dark Horse Sheet template in Google Drive.
 2. Fill in Team Intel and Players on the Internal tabs.
 3. Set `Publish = NO` and `Branding_Mode` while you work.
-4. Publish the `Report Brief - Published` and `Players - Published` tabs to the
-   web as CSV (individually, see above). Both are required.
+4. Decide which sharing approach you're using for this report (see above), and
+   set it up: either share the whole Sheet as "Anyone with the link," or
+   publish the two `- Published` tabs individually as CSV.
 5. Set `Publish = YES` when ready.
-6. Paste the two published links into `link-generator.html`, generate the link, send it.
+6. Paste the two tab links into `link-generator.html`, generate the link, send it.
 
 ## Whitelisting
 
