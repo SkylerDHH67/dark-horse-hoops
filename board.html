@@ -384,9 +384,18 @@ function applyBranding(brief){
   }
 }
 
+function isLikelyImageUrl(val){
+  if(!val) return false;
+  return /^https?:\/\//i.test(String(val).trim());
+}
+
 function pickImage(player, keys){
-  for(const k of keys){ if(player[k]) return player[k]; }
+  for(const k of keys){ if(isLikelyImageUrl(player[k])) return player[k].trim(); }
   return null;
+}
+
+function handleImgError(img, cls){
+  img.outerHTML = silhouetteSVG(cls || "");
 }
 
 function renderHeader(brief, opts){
@@ -412,8 +421,7 @@ function renderCard(player, index){
     <div class="head"><span>DH &middot; ${String(player["Player ID"] || (index+1)).toUpperCase()}</span>
       <span class="status"><span class="dot"></span>ACTIVE</span></div>
     <div class="frame">
-      ${imgUrl ? `<img src="${imgUrl}" alt="" onerror="this.remove()">` : ""}
-      ${!imgUrl ? silhouetteSVG("silhouette") : ""}
+      ${imgUrl ? `<img src="${imgUrl}" alt="" onerror="handleImgError(this, 'silhouette')">` : silhouetteSVG("silhouette")}
       <div class="scanline"></div>
       <div class="tag">${player["Priority"] || "-"}</div>
     </div>
@@ -499,7 +507,7 @@ function renderCompareRows(players, catMetrics){
       <tr data-idx="${i}">
         <td class="identity">
           <div class="cmp-player">
-            <div class="thumb">${imgUrl ? `<img src="${imgUrl}" onerror="this.remove()">` : silhouetteSVG("")}</div>
+            <div class="thumb">${imgUrl ? `<img src="${imgUrl}" onerror="handleImgError(this, '')">` : silhouetteSVG("")}</div>
             <div>
               <div class="name">${p["Name"]}</div>
               <div class="sub">${[p["Position"], p["Current Team"]].filter(Boolean).join(" &middot; ")}</div>
@@ -648,7 +656,7 @@ function openDossier(player){
       <button class="close" onclick="closeDossier()">&times;</button>
       <div class="top">
         <div class="photo">
-          ${imgUrl ? `<img src="${imgUrl}" alt="" onerror="this.remove()">` : silhouetteSVG("silhouette")}
+          ${imgUrl ? `<img src="${imgUrl}" alt="" onerror="handleImgError(this, 'silhouette')">` : silhouetteSVG("silhouette")}
         </div>
         <div>
           <h2>${player["Name"]}</h2>
