@@ -128,6 +128,29 @@ Fit Rating also drives the gold meter bar at the bottom of each player card
 and a small "TOP PICK" badge appears on cards (and in the dossier) where
 `Top Recommendation Badge` is `Yes`.
 
+## Skill icons in the dossier
+
+Each player can show up to four skill icons in the expanded dossier, driven by
+four columns on `Players - Published`: `Skill 1`, `Skill 2`, `Skill 3`, `Skill 4`
+(see `SKILL_FIELDS` near the top of `board.html`'s `<script>`). Unlike every
+other player field, these columns don't hold display text -- each one holds a
+direct image URL pointing at an icon in the `Skill Bank` tab's asset list, and
+the icon artwork itself already has the skill name baked into the image, so no
+separate text label is needed next to it.
+
+A slot is only rendered if it looks like a real URL (`isLikelyImageUrl`); a
+blank cell, or anything that isn't a URL, is silently skipped rather than
+leaving a broken icon or a gap -- so a player can show fewer than four skills
+with nothing looking wrong. If an icon URL is present but the image itself
+fails to load, that one icon tile disappears rather than showing a broken
+image.
+
+Gemini fills in these four columns per player (see the Skill Bank tab's
+instructions for exactly how it picks which four skills and resolves each to
+an icon URL) -- `board.html` itself has no opinion on which skills exist or
+what the icons look like, it just renders whatever URLs show up in these four
+columns.
+
 ## Deployment
 
 This site is served by GitHub Pages directly from this repo (Settings -> Pages).
