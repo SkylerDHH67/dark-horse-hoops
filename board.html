@@ -108,8 +108,8 @@
   table.cmp thead th:hover{ color:var(--ink); }
   table.cmp thead th.sorted{ color:var(--gold-hi); }
   table.cmp td.identity, table.cmp th.identity{ position:sticky; left:0; background:var(--panel); z-index:3; border-right:1px solid var(--line); }
-  table.cmp tbody tr{ cursor:pointer; }
-  table.cmp tbody tr:hover td{ filter:brightness(1.08); }
+  table.cmp tbody tr{ cursor:pointer; transition:filter .15s ease, box-shadow .15s ease; }
+  table.cmp tbody tr:hover{ filter:brightness(1.55) saturate(1.15); box-shadow:inset 0 0 0 9999px rgba(255,255,255,0.03); }
   .cmp-player{ display:flex; align-items:center; gap:10px; min-width:170px; }
   .cmp-player .thumb{ width:34px; height:34px; border-radius:8px; overflow:hidden; background:#21242b; flex-shrink:0; position:relative; }
   .cmp-player .thumb img{ width:100%; height:100%; object-fit:cover; }
@@ -402,6 +402,15 @@ function categoricalIntensity(value){
   return steps[hash % steps.length];
 }
 
+// t is always raw min-max position within the column now (0 = lowest number in the
+// column, 1 = highest) -- NOT adjusted for whether high or low is "good" for that
+// metric. This is a literal magnitude heat map (higher number always reads warmer,
+// lower number always reads cooler), which is what drives heatColor() below. A
+// metric's `direction` field is kept only to flag NEUTRAL columns (Position, Height)
+// as non-heat; it no longer flips which end of the scale looks "hot" for
+// LOWER_IS_BETTER metrics like Risk Level / Budget Level -- a high risk number now
+// reads hot/red-orange and a low one reads cool/blue, which matches how most people
+// read a risk column on sight.
 function computeIntensities(players, metric){
   if(metric.format === "CATEGORICAL"){
     return players.map(function(p){ return categoricalIntensity(p[metric.key]); });
@@ -414,19 +423,33 @@ function computeIntensities(players, metric){
   return vals.map(function(v){
     if(v === null) return null;
     if(max === min) return 0.5;
-    let t = (v - min) / (max - min);
-    if(metric.direction === "LOWER_IS_BETTER") t = 1 - t;
-    return t;
+    return (v - min) / (max - min);
   });
 }
 
-function intensityStyle(t){
-  if(t === null || t === undefined) return "";
-  const alpha = 0.12 + t * 0.55;
-  // References the live --accent-1-rgb / --accent-2-rgb custom properties rather than
-  // fixed colors, so the heatmap quietly picks up whatever team colors are currently
-  // active (set by applyBranding) without this function needing to know about them.
-  return `background:linear-gradient(90deg, rgba(var(--accent-1-rgb),${alpha.toFixed(2)}), rgba(var(--accent-2-rgb),${(alpha*0.9).toFixed(2)}));`;
+// Whether a metric participates in the warm/cool heat scale at all -- Position and
+// Height are informational, not a magnitude, so they're always left neutral rather
+// than picking up an arbitrary tint.
+function isHeatable(metric){
+  return metric.direction !== "NEUTRAL";
+}
+
+// Cool (low) -> warm (high) color scale for the heatmap. The warm end tracks the
+// live --accent-1 brand color (so a client-branded report's heatmap uses their
+// accent instead of Dark Horse orange); the cool end is a fixed blue, since "cool"
+// isn't a brand concept and needs to read as cool regardless of branding.
+const HEAT_COOL_RGB = [58, 160, 255];
+function currentHeatWarmRgb(){
+  const raw = getComputedStyle(document.documentElement).getPropertyValue("--accent-1-rgb").trim();
+  const parts = raw.split(",").map(function(n){ return parseInt(n.trim(), 10); });
+  return parts.length === 3 && parts.every(function(n){ return !isNaN(n); }) ? parts : [247, 142, 72];
+}
+function heatColor(t, warmRgb, alpha){
+  if(t === null || t === undefined) return null;
+  const r = Math.round(HEAT_COOL_RGB[0] + (warmRgb[0] - HEAT_COOL_RGB[0]) * t);
+  const g = Math.round(HEAT_COOL_RGB[1] + (warmRgb[1] - HEAT_COOL_RGB[1]) * t);
+  const b = Math.round(HEAT_COOL_RGB[2] + (warmRgb[2] - HEAT_COOL_RGB[2]) * t);
+  return `rgba(${r},${g},${b},${alpha})`;
 }
 
 function showState(mark, title, body){
@@ -605,20 +628,34 @@ function sortedIndices(players, metrics){
   });
 }
 
+// Each row now paints as ONE continuous left-to-right gradient spanning every metric
+// column, rather than each <td> carrying its own independent mini-gradient -- the
+// per-cell numbers still show their exact value, the gradient just reads as a single
+// flowing heat wash across the row. The gradient lives on the <tr> itself; the sticky
+// identity cell keeps its own opaque background (see .identity CSS) so it always
+// paints over the row gradient regardless of where the columns land underneath it.
 function renderCompareRows(players, metrics){
   const order = sortedIndices(players, metrics);
   const intensityMap = {};
   metrics.forEach(function(m){ intensityMap[m.key] = computeIntensities(players, m); });
+  const warmRgb = currentHeatWarmRgb();
+  const HEAT_ALPHA = 0.42;
+  const NEUTRAL_STOP = "rgba(255,255,255,0.025)";
   return order.map(function(i){
     const p = players[i];
     const imgUrl = pickImage(p, ["Player Action Image URL","Player Cutout URL","Player Image URL"]);
-    const cells = metrics.map(function(m){
+    const rowStops = metrics.map(function(m){
+      if(!isHeatable(m)) return NEUTRAL_STOP;
       const t = intensityMap[m.key][i];
+      return heatColor(t, warmRgb, HEAT_ALPHA) || NEUTRAL_STOP;
+    });
+    const rowGradient = rowStops.length ? `linear-gradient(to right, ${rowStops.join(", ")})` : "none";
+    const cells = metrics.map(function(m){
       const dv = displayValue(p[m.key], m.format);
-      return `<td class="metric-cell" style="${intensityStyle(t)}"><span class="${dv === '—' ? 'dash' : ''}">${dv}</span></td>`;
+      return `<td class="metric-cell"><span class="${dv === '—' ? 'dash' : ''}">${dv}</span></td>`;
     }).join("");
     return `
-      <tr data-idx="${i}">
+      <tr data-idx="${i}" style="background:${rowGradient}">
         <td class="identity">
           <div class="cmp-player">
             <div class="thumb">${imgUrl ? `<img src="${imgUrl}" onerror="handleImgError(this, '')">` : silhouetteSVG("")}</div>
