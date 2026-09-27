@@ -944,16 +944,28 @@ document.getElementById("dossier-overlay").addEventListener("click", function(e)
   overlay.addEventListener("pointerdown", function(e){
     const card = e.target.closest(".dossier");
     if(!card) return;
-    dragState = { startX: e.clientX, startY: e.clientY };
+    // Recorded so pointerup below can tell "this was a scroll" apart from "this was a swipe" --
+    // without it, a normal scroll gesture (start position vs. end position) can look identical
+    // to a swipe-to-close/navigate, which was yanking the dossier back to the top mid-scroll.
+    dragState = { startX: e.clientX, startY: e.clientY, startScrollTop: overlay.scrollTop };
   });
   overlay.addEventListener("pointerup", function(e){
     if(!dragState) return;
     const dx = e.clientX - dragState.startX;
     const dy = e.clientY - dragState.startY;
+    const startedAtTop = dragState.startScrollTop <= 0;
+    const scrolledDuringGesture = Math.abs(overlay.scrollTop - dragState.startScrollTop) > 4;
     dragState = null;
+    // If the container actually scrolled during this gesture, it was a scroll, full stop --
+    // don't also fire a close/navigate on top of it just because the finger also moved
+    // sideways or ended up past the swipe threshold.
+    if(scrolledDuringGesture) return;
     const absX = Math.abs(dx), absY = Math.abs(dy);
     const THRESH = 70;
-    if(absY > absX && dy > THRESH){ closeDossier(); return; }
+    // Swipe-down-to-close only counts when the dossier was already scrolled to the top
+    // (standard "pull to dismiss" behavior) -- otherwise a downward drag partway through a
+    // long dossier could close it instead of just failing to scroll further.
+    if(absY > absX && dy > THRESH && startedAtTop){ closeDossier(); return; }
     if(absX > absY && absX > THRESH){ navigateDossier(dx < 0 ? 1 : -1); }
   });
   overlay.addEventListener("pointerleave", function(){ dragState = null; });
