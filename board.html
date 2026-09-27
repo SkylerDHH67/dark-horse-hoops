@@ -935,3 +935,16 @@ const DEMO_PLAYERS = [
         showState("DARK HORSE HOOPS", "This board isn't available.", "It may not be published yet, or the link may have been retired.");
         return;
       }
+      const players = parsePlayers(results[1]);
+      ALL_PLAYERS = players;
+      METRIC_DEFS = usableMetrics(BUILT_IN_METRICS, players);
+      applyBranding(brief);
+      renderBoard(brief, players, {});
+    })
+    .catch(function(e){
+      showState("DARK HORSE HOOPS", "Something went wrong loading this board.", "Try again in a few minutes. If it keeps happening, the underlying sheet may need attention.");
+    });
+})();
+</script>
+</body>
+</html>
