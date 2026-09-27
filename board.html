@@ -187,8 +187,16 @@
   @keyframes dossierIn{ to{ opacity:1; } }
   .dossier .corner-mark{ position:absolute; bottom:14px; right:16px; max-height:26px; max-width:110px; opacity:.55; object-fit:contain; }
   .dossier .dh-watermark{ position:absolute; left:50%; bottom:-18px; transform:translateX(-50%); width:230px; max-width:55%; opacity:.05; pointer-events:none; z-index:0; }
-  .dossier .close{ position:absolute; top:20px; right:20px; width:32px; height:32px; border-radius:50%; border:1px solid var(--line);
-    background:transparent; color:var(--ink-dim); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; }
+  /* position:fixed (not absolute) on purpose -- this is now the only way to close the
+     dossier (vertical swipe-to-close was removed, it kept conflicting with normal
+     scrolling), so it stays pinned to the viewport and reachable no matter how far
+     the person has scrolled down a long profile, instead of scrolling away with the
+     rest of the card's content. */
+  .dossier .close{ position:fixed; top:24px; right:24px; width:40px; height:40px; border-radius:50%; border:1px solid var(--line);
+    background:rgba(10,11,13,0.7); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+    color:var(--ink); font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1;
+    z-index:60; box-shadow:0 4px 14px -4px rgba(0,0,0,.5); }
+  .dossier .close:hover{ border-color:rgba(255,255,255,.3); }
   .dossier .back-btn{ position:absolute; top:20px; left:20px; display:inline-flex; align-items:center; font-family:'JetBrains Mono',monospace; font-size:11.5px; letter-spacing:.5px; padding:7px 14px; border-radius:20px; border:1px solid var(--line); background:transparent; color:var(--ink-dim); cursor:pointer; line-height:1; }
   .dossier .back-btn:hover{ color:var(--ink); border-color:rgba(255,255,255,.25); }
   .dossier .top{ display:flex; gap:22px; margin-bottom:20px; margin-top:38px; }
@@ -956,28 +964,26 @@ document.getElementById("dossier-overlay").addEventListener("click", function(e)
   overlay.addEventListener("pointerdown", function(e){
     const card = e.target.closest(".dossier");
     if(!card) return;
-    // Recorded so pointerup below can tell "this was a scroll" apart from "this was a swipe" --
-    // without it, a normal scroll gesture (start position vs. end position) can look identical
-    // to a swipe-to-close/navigate, which was yanking the dossier back to the top mid-scroll.
+    // startScrollTop lets pointerup below tell "this was a scroll" apart from "this was a
+    // swipe" -- without it, a normal scroll gesture (start position vs. end position) can
+    // look identical to a swipe, which was yanking the dossier around mid-scroll.
     dragState = { startX: e.clientX, startY: e.clientY, startScrollTop: overlay.scrollTop };
   });
   overlay.addEventListener("pointerup", function(e){
     if(!dragState) return;
     const dx = e.clientX - dragState.startX;
     const dy = e.clientY - dragState.startY;
-    const startedAtTop = dragState.startScrollTop <= 0;
     const scrolledDuringGesture = Math.abs(overlay.scrollTop - dragState.startScrollTop) > 4;
     dragState = null;
     // If the container actually scrolled during this gesture, it was a scroll, full stop --
-    // don't also fire a close/navigate on top of it just because the finger also moved
-    // sideways or ended up past the swipe threshold.
+    // don't also treat it as a swipe just because the finger also moved sideways or ended up
+    // past the swipe threshold.
     if(scrolledDuringGesture) return;
     const absX = Math.abs(dx), absY = Math.abs(dy);
     const THRESH = 70;
-    // Swipe-down-to-close only counts when the dossier was already scrolled to the top
-    // (standard "pull to dismiss" behavior) -- otherwise a downward drag partway through a
-    // long dossier could close it instead of just failing to scroll further.
-    if(absY > absX && dy > THRESH && startedAtTop){ closeDossier(); return; }
+    // Horizontal swipe (change player) only -- swipe-down-to-close was removed in favor of
+    // the persistent close (x) button up top, since it kept conflicting with normal
+    // vertical scrolling on a long profile.
     if(absX > absY && absX > THRESH){ navigateDossier(dx < 0 ? 1 : -1); }
   });
   overlay.addEventListener("pointerleave", function(){ dragState = null; });
