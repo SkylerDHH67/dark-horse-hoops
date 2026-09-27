@@ -85,6 +85,7 @@
   .card .scanline{ position:absolute; left:0; right:0; height:2px; top:0; background:var(--accent-2); box-shadow:0 0 10px 2px rgba(107,255,107,.6); animation:sweep 3.6s ease-in-out infinite; }
   @keyframes sweep{ 0%{top:0%;opacity:0;} 8%{opacity:1;} 50%{top:96%;opacity:1;} 58%{opacity:0;} 100%{top:96%;opacity:0;} }
   .card .tag{ position:absolute; top:10px; right:10px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:1.5px; padding:3px 8px; border:1px solid rgba(217,169,79,.5); border-radius:3px; transform:rotate(-2deg); background:linear-gradient(160deg,rgba(217,169,79,.12),rgba(217,169,79,.02)); color:var(--gold-hi); }
+  .card .reco-badge{ position:absolute; top:10px; left:10px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:1px; padding:4px 9px; border-radius:3px; background:linear-gradient(120deg,var(--accent-2),var(--accent-1)); color:#0a0b0d; font-weight:700; z-index:2; box-shadow:0 4px 10px -4px rgba(0,0,0,.5); }
   .card .readout{ margin-left:8px; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--ink-dim); line-height:1.85; }
   .card .kicker{ font-family:'Fraunces',serif; font-style:italic; font-size:12px; color:var(--accent-1); letter-spacing:.3px; margin:10px 0 2px; }
   .card .name-line{ font-family:'Oswald',sans-serif; color:var(--ink); font-size:19px; font-weight:600; letter-spacing:.4px; margin-bottom:5px; }
@@ -98,11 +99,6 @@
   .chip-row{ display:flex; flex-wrap:wrap; gap:8px; }
   .chip{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.5px; text-transform:uppercase; padding:7px 14px; border-radius:20px; border:1px solid var(--line); background:var(--panel); color:var(--ink-dim); cursor:pointer; user-select:none; }
   .chip.active{ border-color:var(--accent-1); color:var(--gold-hi); background:rgba(217,169,79,0.12); }
-
-  .cat-tabs{ display:flex; flex-wrap:wrap; gap:4px; margin-bottom:16px; border-bottom:1px solid var(--line); padding-bottom:0; }
-  .cat-tab{ font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:1px; text-transform:uppercase; padding:10px 16px; border-radius:6px 6px 0 0; border:none; background:transparent; color:var(--ink-dim); cursor:pointer; }
-  .cat-tab.active{ color:var(--ink); background:var(--panel); box-shadow:inset 0 -2px 0 var(--accent-2); }
-  .cat-tab:hover:not(.active){ color:var(--ink); }
 
   .cmp-table-scroll{ overflow-x:auto; border-radius:12px; border:1px solid var(--line); background:var(--panel); }
   table.cmp{ border-collapse:collapse; width:100%; min-width:640px; }
@@ -144,25 +140,33 @@
   }
 
   #dossier-overlay{ position:fixed; inset:0; background:rgba(6,7,8,0.88); backdrop-filter:blur(6px); z-index:50;
-    display:flex; align-items:flex-start; justify-content:center; overflow-y:auto; padding:40px 16px; }
+    display:flex; align-items:flex-start; justify-content:center; overflow-y:auto; padding:40px 16px; touch-action:pan-y; }
   #dossier-overlay.hidden{ display:none !important; }
   .dossier{ background:var(--panel); border:1px solid var(--line); border-radius:16px; max-width:720px; width:100%;
-    padding:28px; position:relative; opacity:0; transform:translateY(18px) scale(.98); animation:dossierIn .35s ease forwards; overflow:hidden; }
+    padding:28px; position:relative; opacity:0; transform:translateY(18px) scale(.98); animation:dossierIn .35s ease forwards; overflow:hidden; touch-action:none; }
   @keyframes dossierIn{ to{ opacity:1; transform:translateY(0) scale(1); } }
   .dossier .corner-mark{ position:absolute; bottom:14px; right:16px; max-height:26px; max-width:110px; opacity:.55; object-fit:contain; }
   .dossier .close{ position:absolute; top:16px; right:16px; width:32px; height:32px; border-radius:50%; border:1px solid var(--line);
     background:transparent; color:var(--ink-dim); font-size:16px; cursor:pointer; }
-  .dossier .top{ display:flex; gap:22px; margin-bottom:20px; }
+  .dossier .back-btn{ position:absolute; top:16px; left:16px; display:flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:11.5px; letter-spacing:.5px; padding:8px 14px; border-radius:20px; border:1px solid var(--line); background:transparent; color:var(--ink-dim); cursor:pointer; }
+  .dossier .back-btn:hover{ color:var(--ink); border-color:rgba(255,255,255,.25); }
+  .dossier .top{ display:flex; gap:22px; margin-bottom:20px; margin-top:8px; }
   .dossier .photo{ width:160px; height:200px; border-radius:10px; overflow:hidden; background:linear-gradient(160deg,#21242b,#14161a); flex-shrink:0; position:relative; }
   .dossier .photo img{ width:100%; height:100%; object-fit:cover; }
   .dossier .photo .silhouette{ position:absolute; inset:0; margin:auto; width:70%; height:88%; }
   .dossier .photo .silhouette path{ fill:#383b41; }
+  .dossier .photo .headshot-inset{ position:absolute; left:8px; bottom:8px; width:52px; height:52px; border-radius:50%; overflow:hidden; border:2px solid rgba(255,255,255,0.85); box-shadow:0 4px 10px -3px rgba(0,0,0,.6); background:#21242b; }
+  .dossier .photo .headshot-inset img{ width:100%; height:100%; object-fit:cover; }
   .dossier h2{ font-family:'Bebas Neue',sans-serif; font-size:32px; letter-spacing:1px; margin:0 0 6px; }
   .dossier .meta{ font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--ink-dim); letter-spacing:.5px; margin-bottom:14px; }
   .dossier .meta b{ color:var(--ink); font-weight:500; }
   .dossier .stat-row{ display:flex; gap:18px; flex-wrap:wrap; }
   .dossier .stat{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-dim); }
   .dossier .stat b{ display:block; font-size:18px; color:var(--ink); font-family:'Oswald',sans-serif; font-weight:600; }
+  .dossier .ratings-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+  .dossier .rating-chip{ font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:.5px; text-transform:uppercase; padding:6px 11px; border-radius:20px; border:1px solid var(--line); color:var(--ink-dim); background:rgba(255,255,255,0.02); }
+  .dossier .rating-chip b{ color:var(--ink); font-weight:600; margin-left:5px; }
+  .dossier .reco-badge{ display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:1px; padding:5px 11px; border-radius:20px; background:linear-gradient(120deg,var(--accent-2),var(--accent-1)); color:#0a0b0d; font-weight:700; margin-bottom:10px; }
   .dossier section{ margin-bottom:16px; }
   .dossier section h3{ font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:1.5px; text-transform:uppercase; color:var(--accent-1); margin:0 0 6px; }
   .dossier section p{ font-size:14px; line-height:1.65; color:var(--ink); margin:0; }
@@ -202,26 +206,46 @@ const BRIEF_FIELDS = [
   "Client Logo URL","Secondary Client Mark URL","Team Photography URL",
   "Arena / Background Image URL","Header / Hero Image URL","Texture / Background Asset URL"
 ];
+// Mirrors the real column order on the "Players - Published" tab (A-AJ) so this list is
+// easy to audit against the live sheet. Fit Rating / Level Rating / Top Recommendation Badge /
+// Risk Level / Budget Level (cols M-Q) and Stl Rate / Blk Rate / 3pt Attempts per game
+// (cols V-X) were added here to match columns Skyler added to the live template.
 const PLAYER_FIELDS = [
   "Player ID","Name","Current Team","League","Country","Nationality","Age","Height",
-  "Position","Secondary Position","Role","Archetype","PPG","RPG","APG","FG%",
+  "Position","Secondary Position","Role","Archetype",
+  "Fit Rating","Level Rating","Top Recommendation Badge","Risk Level","Budget Level",
+  "PPG","RPG","APG","FG%","Stl Rate","Blk Rate","3pt Attempts per game",
   "Why He's Here","Fit With Brief","Key Strengths","Watch / Concerns",
   "Player Image URL","Player Action Image URL","Player Cutout URL",
   "Film URL","Highlight URL","External Profile URL","Priority","Category"
 ];
 
-// Compare view's metric list is fixed here in code, on purpose -- it only ever uses columns
-// that already exist on every Players - Published tab today (Height, Age, PPG, RPG, APG, FG%).
-// No Google Sheet changes are required for Compare to work, on any existing or future report.
+// Compare view's metric list is fixed here in code, on purpose. Each report's Compare view
+// only ever shows metrics from this list that actually have a matching column on that
+// report's Players - Published data (see usableMetrics) -- older reports made before a
+// given column existed just quietly don't show that one metric, nothing breaks.
+//
+// format: PERCENT / DECIMAL / COUNT / FEET_INCHES / SCALE / CATEGORICAL
+//   SCALE is for rating-style columns that may be authored as a number (e.g. 1-10 or
+//   0-100) or as a word (Low/Medium/High) -- numericValue() handles both for heat-mapping
+//   and sorting, while the real sheet text is always what's actually displayed.
+//   CATEGORICAL (Position) gets a stable per-value color tint rather than a high/low heat
+//   gradient, since "highest position" isn't a meaningful concept.
+// direction: HIGHER_IS_BETTER / LOWER_IS_BETTER / NEUTRAL
 const BUILT_IN_METRICS = [
-  { key:"Height", display:"HEIGHT", category:"PHYSICAL",   format:"FEET_INCHES", direction:"NEUTRAL" },
-  { key:"Age",    display:"AGE",    category:"PHYSICAL",   format:"DECIMAL",     direction:"NEUTRAL" },
-  { key:"PPG",    display:"PPG",    category:"SCORING",    format:"DECIMAL",     direction:"HIGHER_IS_BETTER" },
-  { key:"FG%",    display:"FG%",    category:"SHOOTING",   format:"PERCENT",     direction:"HIGHER_IS_BETTER" },
-  { key:"APG",    display:"APG",    category:"PLAYMAKING", format:"DECIMAL",     direction:"HIGHER_IS_BETTER" },
-  { key:"RPG",    display:"RPG",    category:"REBOUNDING", format:"DECIMAL",     direction:"HIGHER_IS_BETTER" }
+  { key:"Position",              display:"POS",    format:"CATEGORICAL", direction:"NEUTRAL" },
+  { key:"Height",                display:"HEIGHT", format:"FEET_INCHES", direction:"NEUTRAL" },
+  { key:"Fit Rating",            display:"FIT",     format:"SCALE",      direction:"HIGHER_IS_BETTER" },
+  { key:"Level Rating",          display:"LEVEL",   format:"SCALE",      direction:"HIGHER_IS_BETTER" },
+  { key:"Risk Level",            display:"RISK",    format:"SCALE",      direction:"LOWER_IS_BETTER" },
+  { key:"Budget Level",          display:"BUDGET",  format:"SCALE",      direction:"LOWER_IS_BETTER" },
+  { key:"PPG",                   display:"PPG",     format:"DECIMAL",    direction:"HIGHER_IS_BETTER" },
+  { key:"RPG",                   display:"RPG",     format:"DECIMAL",    direction:"HIGHER_IS_BETTER" },
+  { key:"APG",                   display:"APG",     format:"DECIMAL",    direction:"HIGHER_IS_BETTER" },
+  { key:"3pt Attempts per game", display:"3PA",     format:"DECIMAL",    direction:"HIGHER_IS_BETTER" },
+  { key:"Stl Rate",              display:"STL",     format:"DECIMAL",    direction:"HIGHER_IS_BETTER" },
+  { key:"Blk Rate",              display:"BLK",     format:"DECIMAL",    direction:"HIGHER_IS_BETTER" }
 ];
-const CATEGORY_ORDER = ["PHYSICAL","SCORING","SHOOTING","PLAYMAKING","REBOUNDING","DEFENSE"];
 
 const SILHOUETTE_PATH = "M50 8c8 0 14 6 14 14s-6 14-14 14-14-6-14-14 6-14 14-14zm-6 30h12c10 0 18 7 20 17l6 38-14 4-4-26-3 60h-9l-2-46-2 46h-9l-3-60-4 26-14-4 6-38c2-10 10-17 20-17z";
 function silhouetteSVG(cls){
@@ -315,6 +339,21 @@ function numericValue(raw, format){
     if(isNaN(n)) return null;
     return n <= 1 ? n * 100 : n;
   }
+  if(format === "SCALE"){
+    // Rating-style columns (Fit / Level / Risk / Budget) may be authored as a plain
+    // number (any scale) or as a word -- try numeric first, then fall back to a
+    // rough word mapping so heat-mapping and sorting still work either way. The
+    // literal sheet text is always what's actually shown to the user (displayValue).
+    const n = parseFloat(s.replace(/,/g,""));
+    if(!isNaN(n)) return n;
+    const word = s.toLowerCase().replace(/[^a-z/]/g,"");
+    if(/^(verylow|low|l)$/.test(word)) return 15;
+    if(/^(medium|mid|moderate|m)$/.test(word)) return 50;
+    if(/^(veryhigh|high|h)$/.test(word)) return 85;
+    if(/^(elite|premium|max|maximum)$/.test(word)) return 100;
+    if(/^(none|na)$/.test(word)) return 0;
+    return null;
+  }
   const n = parseFloat(s.replace(/,/g,""));
   return isNaN(n) ? null : n;
 }
@@ -335,19 +374,8 @@ function displayValue(raw, format){
     const n = parseFloat(s);
     return isNaN(n) ? s : String(Math.round(n * 10) / 10);
   }
+  // SCALE and CATEGORICAL both just show the sheet's literal text.
   return s;
-}
-
-function categoriesInOrder(metrics){
-  const seen = [];
-  metrics.forEach(function(m){ if(seen.indexOf(m.category) === -1) seen.push(m.category); });
-  return seen.sort(function(a, b){
-    const ia = CATEGORY_ORDER.indexOf(a), ib = CATEGORY_ORDER.indexOf(b);
-    if(ia === -1 && ib === -1) return 0;
-    if(ia === -1) return 1;
-    if(ib === -1) return -1;
-    return ia - ib;
-  });
 }
 
 function uniquePositions(players){
@@ -359,7 +387,22 @@ function uniquePositions(players){
   return seen;
 }
 
+// Deterministic per-value color tint for categorical columns (Position) -- gives every
+// distinct value a stable shade so the heatmap table still reads as "colored in", without
+// implying that one position is numerically better than another.
+function categoricalIntensity(value){
+  const s = String(value || "").trim();
+  if(!s) return null;
+  let hash = 0;
+  for(let i = 0; i < s.length; i++){ hash = (hash * 31 + s.charCodeAt(i)) >>> 0; }
+  const steps = [0.14, 0.22, 0.30, 0.38, 0.46];
+  return steps[hash % steps.length];
+}
+
 function computeIntensities(players, metric){
+  if(metric.format === "CATEGORICAL"){
+    return players.map(function(p){ return categoricalIntensity(p[metric.key]); });
+  }
   const vals = players.map(function(p){ return numericValue(p[metric.key], metric.format); });
   if(metric.direction === "NEUTRAL") return vals.map(function(){ return null; });
   const nums = vals.filter(function(v){ return v !== null; });
@@ -428,6 +471,17 @@ function handleImgError(img, cls){
   img.outerHTML = silhouetteSVG(cls || "");
 }
 
+// Fit Rating drives the card meter bar. Gemini may end up authoring it on a 0-100 scale
+// (matching the internal League Leveling reference tab) or a simpler 1-10 scale -- this
+// normalizes either convention into a 0-100 fill percentage. Falls back to null (caller
+// then falls back to the old PPG-based estimate) if Fit Rating isn't populated yet.
+function fitRatingPercent(player){
+  const raw = numericValue(player["Fit Rating"], "SCALE");
+  if(raw === null) return null;
+  const pct = raw <= 10 ? raw * 10 : raw;
+  return Math.min(100, Math.max(0, Math.round(pct)));
+}
+
 // Shared client-branding state for this board, computed once per load and
 // reused by the header logo row and the player dossier's corner mark --
 // so both stay in sync without recomputing/duplicating the same logic.
@@ -468,7 +522,12 @@ function renderCard(player, index){
   const div = document.createElement("div");
   div.className = "card";
   div.style.animationDelay = (index * 70) + "ms";
-  const imgUrl = pickImage(player, ["Player Cutout URL","Player Action Image URL","Player Image URL"]);
+  // Action shot is the primary card image now; cutout and plain headshot are fallbacks
+  // in that order if no action shot is on file for this player.
+  const imgUrl = pickImage(player, ["Player Action Image URL","Player Cutout URL","Player Image URL"]);
+  const isTopReco = String(player["Top Recommendation Badge"] || "").trim().toUpperCase() === "YES";
+  const fitPct = fitRatingPercent(player);
+  const meterPct = fitPct !== null ? fitPct : Math.min(100, Math.max(8, Number(player["PPG"]) * 5 || 30));
   div.innerHTML = `
     <div class="gold-edge"></div>
     <div class="head"><span>DH &middot; ${String(player["Player ID"] || (index+1)).toUpperCase()}</span>
@@ -476,6 +535,7 @@ function renderCard(player, index){
     <div class="frame">
       ${imgUrl ? `<img src="${imgUrl}" alt="" onerror="handleImgError(this, 'silhouette')">` : silhouetteSVG("silhouette")}
       <div class="scanline"></div>
+      ${isTopReco ? `<div class="reco-badge">&#9733; TOP PICK</div>` : ""}
       <div class="tag">${player["Priority"] || "-"}</div>
     </div>
     <div class="kicker">${player["Role"] || player["Archetype"] || ""}</div>
@@ -483,10 +543,10 @@ function renderCard(player, index){
       <div class="name-line">${player["Name"]}</div>
       <div>POS <b>${player["Position"] || "-"}</b> &nbsp; HT <b>${player["Height"] || "-"}</b> &nbsp; AGE <b>${player["Age"] || "-"}</b></div>
       <div>TEAM <b>${player["Current Team"] || "-"}</b>${player["League"] ? ", " + player["League"] : ""}</div>
-      <div class="meter"><i style="width:${Math.min(100, Math.max(8, Number(player["PPG"]) * 5 || 30))}%"></i></div>
+      <div class="meter"><i style="width:${meterPct}%"></i></div>
     </div>
   `;
-  div.addEventListener("click", function(){ openDossier(player); });
+  div.addEventListener("click", function(){ openDossier(player, ALL_PLAYERS, index); });
   return div;
 }
 
@@ -494,7 +554,6 @@ function renderCard(player, index){
 let ALL_PLAYERS = [];
 let METRIC_DEFS = [];
 let VIEW = "cards";
-let CURRENT_CATEGORY = null;
 let CURRENT_POSITION = "ALL";
 let SORT_KEY = null;
 let SORT_DIR = "desc";
@@ -528,11 +587,10 @@ function filteredPlayers(){
   return ALL_PLAYERS.filter(function(p){ return String(p["Position"] || "").trim() === CURRENT_POSITION; });
 }
 
-function sortedIndices(players, catMetrics){
+function sortedIndices(players, metrics){
   const idxs = players.map(function(_, i){ return i; });
   if(!SORT_KEY) return idxs;
-  const metric = catMetrics.filter(function(m){ return m.key === SORT_KEY; })[0]
-    || METRIC_DEFS.filter(function(m){ return m.key === SORT_KEY; })[0];
+  const metric = metrics.filter(function(m){ return m.key === SORT_KEY; })[0];
   if(!metric) return idxs;
   return idxs.slice().sort(function(a, b){
     const va = numericValue(players[a][SORT_KEY], metric.format);
@@ -544,14 +602,14 @@ function sortedIndices(players, catMetrics){
   });
 }
 
-function renderCompareRows(players, catMetrics){
-  const order = sortedIndices(players, catMetrics);
+function renderCompareRows(players, metrics){
+  const order = sortedIndices(players, metrics);
   const intensityMap = {};
-  catMetrics.forEach(function(m){ intensityMap[m.key] = computeIntensities(players, m); });
+  metrics.forEach(function(m){ intensityMap[m.key] = computeIntensities(players, m); });
   return order.map(function(i){
     const p = players[i];
-    const imgUrl = pickImage(p, ["Player Cutout URL","Player Action Image URL","Player Image URL"]);
-    const cells = catMetrics.map(function(m){
+    const imgUrl = pickImage(p, ["Player Action Image URL","Player Cutout URL","Player Image URL"]);
+    const cells = metrics.map(function(m){
       const t = intensityMap[m.key][i];
       const dv = displayValue(p[m.key], m.format);
       return `<td class="metric-cell" style="${intensityStyle(t)}"><span class="${dv === '—' ? 'dash' : ''}">${dv}</span></td>`;
@@ -573,7 +631,7 @@ function renderCompareRows(players, catMetrics){
   }).join("");
 }
 
-function renderMobilePicker(players, catMetrics){
+function renderMobilePicker(players, metrics){
   if(!MOBILE_SELECTED.size){
     players.slice(0, 3).forEach(function(_, i){ MOBILE_SELECTED.add(i); });
   }
@@ -594,7 +652,7 @@ function renderMobilePicker(players, catMetrics){
   const selectedIdxs = players.map(function(_, i){ return i; }).filter(function(i){ return MOBILE_SELECTED.has(i); });
   const stacks = selectedIdxs.map(function(i){
     const p = players[i];
-    const rows = catMetrics.map(function(m){
+    const rows = metrics.map(function(m){
       return `<div class="stack-row"><span>${m.display}</span><b>${displayValue(p[m.key], m.format)}</b></div>`;
     }).join("");
     return `
@@ -622,18 +680,24 @@ function wireMobilePicker(players){
     });
   });
   document.querySelectorAll(".stack-card").forEach(function(card){
-    card.addEventListener("click", function(){ openDossier(players[Number(card.dataset.idx)]); });
+    card.addEventListener("click", function(){
+      const idx = Number(card.dataset.idx);
+      openDossier(players[idx], players, idx);
+    });
   });
 }
 
+// Compare is now one full heatmap table -- every built-in metric that this report's data
+// supports is always shown as its own column, all at once. (There used to be a set of
+// category tabs splitting the columns up one group at a time; that's gone by design, per
+// explicit feedback that it felt like a filtered list rather than a real comparison table.)
+// The position chips remain as a row filter (which players are shown), which is a
+// different thing from column filtering and stays useful on boards with a lot of players.
 function renderCompare(){
   const wrap = document.getElementById("compare-wrap");
   const metrics = METRIC_DEFS;
-  const cats = categoriesInOrder(metrics);
-  if(!CURRENT_CATEGORY || cats.indexOf(CURRENT_CATEGORY) === -1) CURRENT_CATEGORY = cats[0];
   const positions = uniquePositions(ALL_PLAYERS);
   const players = filteredPlayers();
-  const catMetrics = metrics.filter(function(m){ return m.category === CURRENT_CATEGORY; });
 
   wrap.innerHTML = `
     <div class="compare-controls">
@@ -642,26 +706,20 @@ function renderCompare(){
         ${positions.map(function(p){ return `<span class="chip ${CURRENT_POSITION === p ? 'active' : ''}" data-pos="${p}">${p}</span>`; }).join("")}
       </div>
     </div>
-    <div class="cat-tabs" id="cat-tabs">
-      ${cats.map(function(c){ return `<button class="cat-tab ${c === CURRENT_CATEGORY ? 'active' : ''}" data-cat="${c}">${c}</button>`; }).join("")}
-    </div>
     <div class="cmp-table-scroll">
       <table class="cmp">
         <thead><tr>
           <th class="identity">Player</th>
-          ${catMetrics.map(function(m){ return `<th data-key="${m.key}" class="${SORT_KEY === m.key ? 'sorted' : ''}">${m.display}</th>`; }).join("")}
+          ${metrics.map(function(m){ return `<th data-key="${m.key}" class="${SORT_KEY === m.key ? 'sorted' : ''}">${m.display}</th>`; }).join("")}
         </tr></thead>
-        <tbody>${renderCompareRows(players, catMetrics)}</tbody>
+        <tbody>${renderCompareRows(players, metrics)}</tbody>
       </table>
     </div>
-    <div class="mobile-picker">${renderMobilePicker(players, catMetrics)}</div>
+    <div class="mobile-picker">${renderMobilePicker(players, metrics)}</div>
   `;
 
   wrap.querySelectorAll("#position-chips .chip").forEach(function(chip){
     chip.addEventListener("click", function(){ CURRENT_POSITION = chip.dataset.pos; renderCompare(); });
-  });
-  wrap.querySelectorAll(".cat-tab").forEach(function(tab){
-    tab.addEventListener("click", function(){ CURRENT_CATEGORY = tab.dataset.cat; SORT_KEY = null; renderCompare(); });
   });
   wrap.querySelectorAll("table.cmp thead th[data-key]").forEach(function(th){
     th.addEventListener("click", function(){
@@ -672,7 +730,10 @@ function renderCompare(){
     });
   });
   wrap.querySelectorAll("table.cmp tbody tr[data-idx]").forEach(function(tr){
-    tr.addEventListener("click", function(){ openDossier(players[Number(tr.dataset.idx)]); });
+    tr.addEventListener("click", function(){
+      const idx = Number(tr.dataset.idx);
+      openDossier(players[idx], players, idx);
+    });
   });
   wireMobilePicker(players);
 }
@@ -687,9 +748,10 @@ function renderBoard(brief, players, opts){
   players.forEach(function(p, i){ grid.appendChild(renderCard(p, i)); });
 
   VIEW = "cards";
-  CURRENT_CATEGORY = null;
   CURRENT_POSITION = "ALL";
-  SORT_KEY = null;
+  // Compare view defaults to best-Fit-Rating-first; falls back gracefully (no sort) on
+  // older reports that don't have a Fit Rating column yet.
+  SORT_KEY = "Fit Rating";
   SORT_DIR = "desc";
   MOBILE_SELECTED = new Set();
   grid.classList.remove("view-hidden");
@@ -702,19 +764,52 @@ function actionLink(label, url, primary){
   return `<a href="${url}" target="_blank" rel="noopener" class="${primary ? 'primary' : ''}">${label}</a>`;
 }
 
-function openDossier(player){
+// ===== dossier navigation state (back button + swipe left/right/down) =====
+let DOSSIER_LIST = [];
+let DOSSIER_INDEX = -1;
+
+function navigateDossier(delta){
+  if(DOSSIER_INDEX === -1 || !DOSSIER_LIST.length) return;
+  const next = DOSSIER_INDEX + delta;
+  if(next < 0 || next >= DOSSIER_LIST.length) return;
+  openDossier(DOSSIER_LIST[next], DOSSIER_LIST, next);
+}
+
+function openDossier(player, list, index){
+  // list/index let the caller say "this player, within this ordered set" (Cards grid,
+  // filtered Compare rows, mobile stack) so swiping/back navigation moves through whatever
+  // the person was actually looking at. Falls back to the full player list if not given.
+  DOSSIER_LIST = (list && list.length) ? list : ALL_PLAYERS;
+  DOSSIER_INDEX = typeof index === "number" ? index : DOSSIER_LIST.indexOf(player);
+
   const overlay = document.getElementById("dossier-overlay");
-  const imgUrl = pickImage(player, ["Player Cutout URL","Player Action Image URL","Player Image URL"]);
+  // Action/cutout shot stays the primary "hero" photo; the plain headshot (if different
+  // from the hero shot) is layered in as a small, subtle corner inset -- present, not distracting.
+  const imgUrl = pickImage(player, ["Player Action Image URL","Player Cutout URL","Player Image URL"]);
+  const headshotUrl = isLikelyImageUrl(player["Player Image URL"]) ? player["Player Image URL"].trim() : null;
+  const showHeadshotInset = headshotUrl && headshotUrl !== imgUrl;
   const cornerMark = BRAND.clientLogo || BRAND.secondaryMark;
+  const isTopReco = String(player["Top Recommendation Badge"] || "").trim().toUpperCase() === "YES";
+
+  const ratingChips = [
+    player["Fit Rating"] ? `<div class="rating-chip">Fit<b>${player["Fit Rating"]}</b></div>` : "",
+    player["Level Rating"] ? `<div class="rating-chip">Level<b>${player["Level Rating"]}</b></div>` : "",
+    player["Risk Level"] ? `<div class="rating-chip">Risk<b>${player["Risk Level"]}</b></div>` : "",
+    player["Budget Level"] ? `<div class="rating-chip">Budget<b>${player["Budget Level"]}</b></div>` : ""
+  ].filter(Boolean).join("");
+
   overlay.innerHTML = `
     <div class="dossier">
       ${cornerMark ? `<img class="corner-mark" src="${cornerMark}" alt="" onerror="this.remove()">` : ""}
+      <button class="back-btn" onclick="closeDossier()">&lsaquo; Back to players</button>
       <button class="close" onclick="closeDossier()">&times;</button>
       <div class="top">
         <div class="photo">
           ${imgUrl ? `<img src="${imgUrl}" alt="" onerror="handleImgError(this, 'silhouette')">` : silhouetteSVG("silhouette")}
+          ${showHeadshotInset ? `<div class="headshot-inset"><img src="${headshotUrl}" alt="" onerror="this.parentElement.remove()"></div>` : ""}
         </div>
         <div>
+          ${isTopReco ? `<div class="reco-badge">&#9733; TOP RECOMMENDATION</div>` : ""}
           <h2>${player["Name"]}</h2>
           <div class="meta">${[player["Position"], player["Height"], player["Age"] ? "Age " + player["Age"] : "", player["Current Team"], player["League"]].filter(Boolean).join(" &middot; ")}</div>
           <div class="stat-row">
@@ -723,6 +818,7 @@ function openDossier(player){
             ${player["APG"] ? `<div class="stat"><b>${player["APG"]}</b>APG</div>` : ""}
             ${player["FG%"] ? `<div class="stat"><b>${player["FG%"]}</b>FG%</div>` : ""}
           </div>
+          ${ratingChips ? `<div class="ratings-row">${ratingChips}</div>` : ""}
         </div>
       </div>
       ${player["Why He's Here"] ? `<section><h3>Why he's here</h3><p>${player["Why He's Here"]}</p></section>` : ""}
@@ -743,6 +839,31 @@ document.getElementById("dossier-overlay").addEventListener("click", function(e)
   if(e.target.id === "dossier-overlay") closeDossier();
 });
 
+// Swipe/drag gestures on the open dossier: swipe (or click-drag) left/right moves to the
+// adjacent player within whatever list the dossier was opened from; swiping down closes it.
+// Wired once on the stable overlay element (delegated via closest(".dossier") at drag-start)
+// rather than re-wired on every render.
+(function wireDossierGestures(){
+  const overlay = document.getElementById("dossier-overlay");
+  let dragState = null;
+  overlay.addEventListener("pointerdown", function(e){
+    const card = e.target.closest(".dossier");
+    if(!card) return;
+    dragState = { startX: e.clientX, startY: e.clientY };
+  });
+  overlay.addEventListener("pointerup", function(e){
+    if(!dragState) return;
+    const dx = e.clientX - dragState.startX;
+    const dy = e.clientY - dragState.startY;
+    dragState = null;
+    const absX = Math.abs(dx), absY = Math.abs(dy);
+    const THRESH = 70;
+    if(absY > absX && dy > THRESH){ closeDossier(); return; }
+    if(absX > absY && absX > THRESH){ navigateDossier(dx < 0 ? 1 : -1); }
+  });
+  overlay.addEventListener("pointerleave", function(){ dragState = null; });
+})();
+
 const DEMO_BRIEF = {
   "Report Title":"Bonn - Forward Sourcing Board","Team":"Telekom Baskets Bonn","League":"BBL",
   "Country":"Germany","Season":"2026-27","Positions Needed":"Power forward, small-ball 4/5",
@@ -752,6 +873,8 @@ const DEMO_BRIEF = {
 const DEMO_PLAYERS = [
   { "Player ID":"P01","Name":"Example Player One","Current Team":"Example BC","League":"EuroCup","Age":"23","Height":"6'9\"",
     "Position":"PF","Role":"Stretch-4","Archetype":"Switchable floor-spacer","PPG":"12.4","RPG":"6.1","APG":"1.8","FG%":"0.481",
+    "Fit Rating":"88","Level Rating":"72","Top Recommendation Badge":"Yes","Risk Level":"Low","Budget Level":"Medium",
+    "Stl Rate":"1.4","Blk Rate":"1.1","3pt Attempts per game":"4.2",
     "Why He's Here":"Fits the switchable-4 need directly; production translates from a lower defensive-pace league.",
     "Fit With Brief":"Matches Bonn's spacing need; defensive versatility is the swing skill worth verifying on film.",
     "Key Strengths":"Floor spacing, defensive versatility, low-maintenance personality.",
@@ -759,6 +882,8 @@ const DEMO_PLAYERS = [
     "Priority":"High","Category":"Primary Target" },
   { "Player ID":"P02","Name":"Example Player Two","Current Team":"Example United","League":"ProA","Age":"21","Height":"6'10\"",
     "Position":"C","Role":"Rim protector","Archetype":"Vertical spacer","PPG":"9.8","RPG":"7.4","APG":"0.9","FG%":"0.552",
+    "Fit Rating":"64","Level Rating":"55","Top Recommendation Badge":"No","Risk Level":"Medium","Budget Level":"Low",
+    "Stl Rate":"0.9","Blk Rate":"1.6","3pt Attempts per game":"0.3",
     "Why He's Here":"Adds rim protection Bonn currently lacks off the bench.",
     "Fit With Brief":"Less proven offensively, but the defensive fit is immediate.",
     "Key Strengths":"Shot blocking, offensive rebounding.",
@@ -766,6 +891,8 @@ const DEMO_PLAYERS = [
     "Priority":"Medium","Category":"Depth Option" },
   { "Player ID":"P03","Name":"Example Player Three","Current Team":"Example Club","League":"BBL","Age":"25","Height":"6'8\"",
     "Position":"PF","Role":"Small-ball 5","Archetype":"Switch-everything wing-big","PPG":"14.1","RPG":"5.5","APG":"2.6","FG%":"0.463",
+    "Fit Rating":"91","Level Rating":"80","Top Recommendation Badge":"Yes","Risk Level":"Low","Budget Level":"High",
+    "Stl Rate":"1.8","Blk Rate":"0.4","3pt Attempts per game":"5.6",
     "Why He's Here":"Already produces in this exact league at a high level.",
     "Fit With Brief":"The most complete fit on paper; asking price is the open question.",
     "Key Strengths":"Switchability, secondary playmaking, proven in-league.",
