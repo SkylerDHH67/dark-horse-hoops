@@ -108,8 +108,8 @@
   table.cmp thead th:hover{ color:var(--ink); }
   table.cmp thead th.sorted{ color:var(--gold-hi); }
   table.cmp td.identity, table.cmp th.identity{ position:sticky; left:0; background:var(--panel); z-index:3; border-right:1px solid var(--line); }
-  table.cmp tbody tr{ cursor:pointer; transition:filter .15s ease, box-shadow .15s ease; }
-  table.cmp tbody tr:hover{ filter:brightness(1.55) saturate(1.15); box-shadow:inset 0 0 0 9999px rgba(255,255,255,0.03); }
+  table.cmp tbody tr{ cursor:pointer; transition:filter .15s ease; }
+  table.cmp tbody tr:hover{ filter:brightness(1.55) saturate(1.15); }
   .cmp-player{ display:flex; align-items:center; gap:10px; min-width:170px; }
   .cmp-player .thumb{ width:34px; height:34px; border-radius:8px; overflow:hidden; background:#21242b; flex-shrink:0; position:relative; }
   .cmp-player .thumb img{ width:100%; height:100%; object-fit:cover; }
@@ -390,33 +390,31 @@ function uniquePositions(players){
   return seen;
 }
 
-// Deterministic per-value color tint for categorical columns (Position) -- gives every
-// distinct value a stable shade so the heatmap table still reads as "colored in", without
-// implying that one position is numerically better than another.
-function categoricalIntensity(value){
+// Deterministic per-value color for categorical columns (Position) -- every distinct
+// value gets its own stable, fixed color so it reads as a position tag/legend rather
+// than a heat score. This is intentionally NOT part of the warm/cool heat scale (see
+// isHeatable) -- a position isn't a magnitude, so it never gets brighter or dimmer
+// relative to other rows, it's just a static color for "where they play."
+const POSITION_PALETTE = ["99,102,241", "236,72,153", "16,185,129", "234,179,8", "59,130,246", "168,85,247", "244,63,94"];
+function categoricalColor(value, alpha){
   const s = String(value || "").trim();
   if(!s) return null;
   let hash = 0;
   for(let i = 0; i < s.length; i++){ hash = (hash * 31 + s.charCodeAt(i)) >>> 0; }
-  const steps = [0.14, 0.22, 0.30, 0.38, 0.46];
-  return steps[hash % steps.length];
+  return `rgba(${POSITION_PALETTE[hash % POSITION_PALETTE.length]},${alpha})`;
 }
 
-// t is always raw min-max position within the column now (0 = lowest number in the
-// column, 1 = highest) -- NOT adjusted for whether high or low is "good" for that
-// metric. This is a literal magnitude heat map (higher number always reads warmer,
-// lower number always reads cooler), which is what drives heatColor() below. A
-// metric's `direction` field is kept only to flag NEUTRAL columns (Position, Height)
-// as non-heat; it no longer flips which end of the scale looks "hot" for
-// LOWER_IS_BETTER metrics like Risk Level / Budget Level -- a high risk number now
-// reads hot/red-orange and a low one reads cool/blue, which matches how most people
-// read a risk column on sight.
+// Each metric's heat is computed strictly WITHIN its own column -- a value is only
+// ever compared against other rows' values in that same column, never against a
+// neighboring column. t is the value's raw min-max position within the column (0 =
+// lowest number in the column, 1 = highest), NOT adjusted for whether high or low is
+// "good" for that metric -- this is a literal magnitude heat map (higher number
+// always reads warmer, lower number always reads cooler), which is what drives
+// heatColor() below. Non-heat columns (Position, Height -- see isHeatable) return
+// null for every row, since they aren't a magnitude at all.
 function computeIntensities(players, metric){
-  if(metric.format === "CATEGORICAL"){
-    return players.map(function(p){ return categoricalIntensity(p[metric.key]); });
-  }
+  if(!isHeatable(metric)) return players.map(function(){ return null; });
   const vals = players.map(function(p){ return numericValue(p[metric.key], metric.format); });
-  if(metric.direction === "NEUTRAL") return vals.map(function(){ return null; });
   const nums = vals.filter(function(v){ return v !== null; });
   if(!nums.length) return vals.map(function(){ return null; });
   const min = Math.min.apply(null, nums), max = Math.max.apply(null, nums);
@@ -628,34 +626,35 @@ function sortedIndices(players, metrics){
   });
 }
 
-// Each row now paints as ONE continuous left-to-right gradient spanning every metric
-// column, rather than each <td> carrying its own independent mini-gradient -- the
-// per-cell numbers still show their exact value, the gradient just reads as a single
-// flowing heat wash across the row. The gradient lives on the <tr> itself; the sticky
-// identity cell keeps its own opaque background (see .identity CSS) so it always
-// paints over the row gradient regardless of where the columns land underneath it.
+// Each metric column is its own independent comparison -- a value only ever gets
+// compared against other rows in that SAME column (see computeIntensities), so each
+// cell paints its own flat heat color rather than blending into its neighbors in the
+// row; a warm cell next to a cool cell is just two unrelated columns, not one flowing
+// scale. Position is categorical, not a magnitude, so it gets a fixed per-value color
+// (categoricalColor) instead -- a legend-style tag for "where they play," not a score.
 function renderCompareRows(players, metrics){
   const order = sortedIndices(players, metrics);
   const intensityMap = {};
   metrics.forEach(function(m){ intensityMap[m.key] = computeIntensities(players, m); });
   const warmRgb = currentHeatWarmRgb();
-  const HEAT_ALPHA = 0.42;
-  const NEUTRAL_STOP = "rgba(255,255,255,0.025)";
+  const HEAT_ALPHA = 0.4;
+  const POSITION_ALPHA = 0.32;
   return order.map(function(i){
     const p = players[i];
     const imgUrl = pickImage(p, ["Player Action Image URL","Player Cutout URL","Player Image URL"]);
-    const rowStops = metrics.map(function(m){
-      if(!isHeatable(m)) return NEUTRAL_STOP;
-      const t = intensityMap[m.key][i];
-      return heatColor(t, warmRgb, HEAT_ALPHA) || NEUTRAL_STOP;
-    });
-    const rowGradient = rowStops.length ? `linear-gradient(to right, ${rowStops.join(", ")})` : "none";
     const cells = metrics.map(function(m){
       const dv = displayValue(p[m.key], m.format);
-      return `<td class="metric-cell"><span class="${dv === '—' ? 'dash' : ''}">${dv}</span></td>`;
+      let cellColor = null;
+      if(isHeatable(m)){
+        cellColor = heatColor(intensityMap[m.key][i], warmRgb, HEAT_ALPHA);
+      } else if(m.format === "CATEGORICAL"){
+        cellColor = categoricalColor(p[m.key], POSITION_ALPHA);
+      }
+      const style = cellColor ? ` style="background:${cellColor}"` : "";
+      return `<td class="metric-cell"${style}><span class="${dv === '—' ? 'dash' : ''}">${dv}</span></td>`;
     }).join("");
     return `
-      <tr data-idx="${i}" style="background:${rowGradient}">
+      <tr data-idx="${i}">
         <td class="identity">
           <div class="cmp-player">
             <div class="thumb">${imgUrl ? `<img src="${imgUrl}" onerror="handleImgError(this, '')">` : silhouetteSVG("")}</div>

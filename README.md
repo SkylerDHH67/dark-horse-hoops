@@ -97,44 +97,30 @@ sheet value is displayed), and a direction (`HIGHER_IS_BETTER`,
 end of the scale looks hot. `SCALE` is for the four rating columns -- Gemini
 may fill them in as a number (any scale) or a word (Low/Medium/High); either
 works for sorting and heat-mapping, and the sheet's literal text is always
-what's actually displayed. `CATEGORICAL` (Position) and `NEUTRAL` columns
-(Height) are left out of the heat scale entirely, since neither is a
-magnitude.
+what's actually displayed. `NEUTRAL` columns (Height) are left out of the
+heat scale entirely, since they aren't a magnitude.
 
-Each row paints as one continuous cool-to-warm gradient running left to right
-across every heat-eligible column at once, rather than each cell carrying its
-own separate tint -- a higher number in a column always reads warmer
-(orange, tracking the live `--accent-1` brand color) and a lower number always
-reads cooler (blue), full stop, regardless of whether a high or low number is
-actually the "good" outcome for that particular metric -- so on Risk Level, for
-instance, a high risk number reads hot/red-ish and a low one reads cool/blue,
-which is the intuitive read for a risk column. Hovering a row brightens it as
-a light-up affordance. There is no sheet-driven config of any kind -- adding
-or changing a metric means editing `BUILT_IN_METRICS` in `board.html`'s code,
-not touching any spreadsheet.
+Each cell's heat is computed strictly within its own column -- a value is
+only ever compared against other rows in that same column, never against a
+neighboring column, so each cell paints its own flat color rather than
+blending into the cells next to it (a warm cell next to a cool cell is just
+two unrelated columns, not one flowing scale). A higher number in a column
+always reads warmer (orange, tracking the live `--accent-1` brand color) and
+a lower number always reads cooler (blue), full stop, regardless of whether a
+high or low number is actually the "good" outcome for that particular metric
+-- so on Risk Level, for instance, a high risk number reads hot/red-ish and a
+low one reads cool/blue, which is the intuitive read for a risk column.
+`CATEGORICAL` (Position) is not part of the heat scale at all -- it gets a
+fixed, stable color per distinct value instead (fully independent of the
+other rows), so it reads as a position legend/tag rather than a score.
+Hovering a row brightens it as a light-up affordance. There is no
+sheet-driven config of any kind -- adding or changing a metric means editing
+`BUILT_IN_METRICS` in `board.html`'s code, not touching any spreadsheet.
 
-Real values are always shown (the gradient is a visual layer on top, computed
+Real values are always shown (the color is a visual layer on top, computed
 relative to whatever's currently visible -- it never replaces the number).
 Missing data always shows as `—`, never estimated or treated as zero. On mobile,
 Compare becomes a "pick up to 4 players" selector with a stacked comparison,
 rather than a shrunk table.
 
-Fit Rating also drives the gold meter bar at the bottom of each player card
-(falls back to a rough PPG-based estimate if Fit Rating isn't filled in yet),
-and a small "TOP PICK" badge appears on cards (and in the dossier) where
-`Top Recommendation Badge` is `Yes`.
-
-## Deployment
-
-This site is served by GitHub Pages directly from this repo (Settings -> Pages).
-`CNAME` points it at **darkhorsehoops.net**. DNS for that domain needs an A record
-(apex) pointing at GitHub's Pages IP addresses, set at whichever registrar the
-domain lives at. If Pages ever needs to be reconfigured, that's the one setting
-that matters -- everything else is just static files.
-
-## One placeholder to update
-
-`index.html`'s contact link points to `hello@darkhorsehoops.net`. That inbox
-doesn't necessarily exist yet -- set up an actual mailbox or forwarding rule for
-it (or swap in whatever address you actually want to use) before treating the
-site as fully live.
+Fit Rating also drives the gold meter bar at the bottom of each play
