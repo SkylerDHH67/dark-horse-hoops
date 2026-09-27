@@ -91,21 +91,29 @@ sorts by Fit Rating (best first) by default; click any column header to resort.
 
 Each built-in metric has a display name, a format (`PERCENT`, `DECIMAL`,
 `COUNT`, `FEET_INCHES`, `SCALE`, or `CATEGORICAL`, controlling how the raw
-sheet value is displayed and heat-mapped), and a direction (`HIGHER_IS_BETTER`,
-`LOWER_IS_BETTER`, or `NEUTRAL`). `SCALE` is for the four rating columns --
-Gemini may fill them in as a number (any scale) or a word (Low/Medium/High);
-either works for sorting and heat-mapping, and the sheet's literal text is
-always what's actually displayed. `CATEGORICAL` (Position) gets a stable
-per-value color tint instead of a high/low gradient, since one position isn't
-numerically "better" than another. Risk Level and Budget Level are currently
-set to `LOWER_IS_BETTER` (lower risk / lower budget need reads as more
-attractive) -- flip the `direction` on either in `BUILT_IN_METRICS` if that's
-not the read Skyler wants.
+sheet value is displayed), and a direction (`HIGHER_IS_BETTER`,
+`LOWER_IS_BETTER`, or `NEUTRAL`) -- direction only matters now to mark
+`NEUTRAL` columns (Position, Height) as non-heat; it no longer changes which
+end of the scale looks hot. `SCALE` is for the four rating columns -- Gemini
+may fill them in as a number (any scale) or a word (Low/Medium/High); either
+works for sorting and heat-mapping, and the sheet's literal text is always
+what's actually displayed. `CATEGORICAL` (Position) and `NEUTRAL` columns
+(Height) are left out of the heat scale entirely, since neither is a
+magnitude.
 
-There is no sheet-driven config of any kind -- adding or changing a metric means
-editing `BUILT_IN_METRICS` in `board.html`'s code, not touching any spreadsheet.
+Each row paints as one continuous cool-to-warm gradient running left to right
+across every heat-eligible column at once, rather than each cell carrying its
+own separate tint -- a higher number in a column always reads warmer
+(orange, tracking the live `--accent-1` brand color) and a lower number always
+reads cooler (blue), full stop, regardless of whether a high or low number is
+actually the "good" outcome for that particular metric -- so on Risk Level, for
+instance, a high risk number reads hot/red-ish and a low one reads cool/blue,
+which is the intuitive read for a risk column. Hovering a row brightens it as
+a light-up affordance. There is no sheet-driven config of any kind -- adding
+or changing a metric means editing `BUILT_IN_METRICS` in `board.html`'s code,
+not touching any spreadsheet.
 
-Real values are always shown (heat intensity is a visual layer on top, computed
+Real values are always shown (the gradient is a visual layer on top, computed
 relative to whatever's currently visible -- it never replaces the number).
 Missing data always shows as `—`, never estimated or treated as zero. On mobile,
 Compare becomes a "pick up to 4 players" selector with a stacked comparison,
@@ -119,14 +127,4 @@ and a small "TOP PICK" badge appears on cards (and in the dossier) where
 ## Deployment
 
 This site is served by GitHub Pages directly from this repo (Settings -> Pages).
-`CNAME` points it at **darkhorsehoops.net**. DNS for that domain needs an A record
-(apex) pointing at GitHub's Pages IP addresses, set at whichever registrar the
-domain lives at. If Pages ever needs to be reconfigured, that's the one setting
-that matters -- everything else is just static files.
-
-## One placeholder to update
-
-`index.html`'s contact link points to `hello@darkhorsehoops.net`. That inbox
-doesn't necessarily exist yet -- set up an actual mailbox or forwarding rule for
-it (or swap in whatever address you actually want to use) before treating the
-site as fully live.
+`CNAME` points it at **darkhorsehoops.net**. DNS for that dom
