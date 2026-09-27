@@ -32,7 +32,7 @@
   #state-screen h1{ font-family:'Bebas Neue',sans-serif; font-size:32px; letter-spacing:1px; margin:0 0 12px; }
   #state-screen p{ color:var(--ink-dim); font-size:15px; line-height:1.6; margin:0; }
   #state-screen .mark{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--gold); letter-spacing:2px; text-transform:uppercase; margin-bottom:14px; }
-  #state-screen .state-gif{ width:96px; height:96px; margin:0 auto 18px; display:block; }
+  #state-screen .state-gif{ height:88px; width:auto; margin:0 auto 18px; display:block; }
 
   #header{ padding:56px 24px 28px; text-align:center; background:radial-gradient(circle at 50% 0%,#181a1f 0%,var(--bg) 60%); }
   #header .brand-row{ display:flex; align-items:center; justify-content:center; gap:22px; margin-bottom:28px; }
@@ -148,11 +148,11 @@
   @keyframes dossierIn{ to{ opacity:1; transform:translateY(0) scale(1); } }
   .dossier .corner-mark{ position:absolute; bottom:14px; right:16px; max-height:26px; max-width:110px; opacity:.55; object-fit:contain; }
   .dossier .dh-watermark{ position:absolute; left:50%; bottom:-18px; transform:translateX(-50%); width:230px; max-width:55%; opacity:.05; pointer-events:none; z-index:0; }
-  .dossier .close{ position:absolute; top:16px; right:16px; width:32px; height:32px; border-radius:50%; border:1px solid var(--line);
-    background:transparent; color:var(--ink-dim); font-size:16px; cursor:pointer; }
-  .dossier .back-btn{ position:absolute; top:16px; left:16px; display:flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:11.5px; letter-spacing:.5px; padding:8px 14px; border-radius:20px; border:1px solid var(--line); background:transparent; color:var(--ink-dim); cursor:pointer; }
+  .dossier .close{ position:absolute; top:20px; right:20px; width:32px; height:32px; border-radius:50%; border:1px solid var(--line);
+    background:transparent; color:var(--ink-dim); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; }
+  .dossier .back-btn{ position:absolute; top:20px; left:20px; display:inline-flex; align-items:center; font-family:'JetBrains Mono',monospace; font-size:11.5px; letter-spacing:.5px; padding:7px 14px; border-radius:20px; border:1px solid var(--line); background:transparent; color:var(--ink-dim); cursor:pointer; line-height:1; }
   .dossier .back-btn:hover{ color:var(--ink); border-color:rgba(255,255,255,.25); }
-  .dossier .top{ display:flex; gap:22px; margin-bottom:20px; margin-top:8px; }
+  .dossier .top{ display:flex; gap:22px; margin-bottom:20px; margin-top:38px; }
   .dossier .photo{ width:160px; height:200px; border-radius:10px; overflow:hidden; background:linear-gradient(160deg,#21242b,#14161a); flex-shrink:0; position:relative; }
   .dossier .photo img{ width:100%; height:100%; object-fit:cover; }
   .dossier .photo .silhouette{ position:absolute; inset:0; margin:auto; width:70%; height:88%; }
