@@ -41,6 +41,8 @@
   #header .brand-row .brand-sep{ color:var(--ink-dim); font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:1px; text-transform:uppercase; }
   #header .prepared{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--ink-dim); margin-bottom:10px; }
   #header .demo-flag{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:1px; color:var(--gold-hi); border:1px solid rgba(247,142,72,0.4); padding:3px 10px; border-radius:3px; margin-bottom:14px; }
+  #header .report-date{ display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--ink-dim); border:1px solid var(--line); padding:5px 13px; border-radius:20px; margin-bottom:16px; }
+  #header .report-date b{ color:var(--ink); font-weight:600; }
   #header h1{ font-family:'Bebas Neue',sans-serif; font-size:clamp(30px,6vw,52px); letter-spacing:1px; margin:0 0 8px; }
   #header .sub{ font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; color: var(--accent-1); text-transform:uppercase; margin-bottom:20px; }
   #header .brief{ max-width:640px; margin:0 auto; color:var(--ink-dim); font-size:15px; line-height:1.7; }
@@ -104,10 +106,14 @@
   .cmp-table-scroll{ overflow-x:auto; border-radius:12px; border:1px solid var(--line); background:var(--panel); }
   table.cmp{ border-collapse:collapse; width:100%; min-width:640px; }
   table.cmp th, table.cmp td{ padding:11px 16px; text-align:left; white-space:nowrap; }
-  table.cmp thead th{ font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:1px; text-transform:uppercase; color:var(--ink-dim); border-bottom:1px solid var(--line); cursor:pointer; position:sticky; top:0; background:var(--panel); z-index:2; }
+  /* position is declared twice on purpose: -webkit-sticky first as a fallback for older iOS
+     Safari (roughly iOS 12 and earlier only recognize the prefixed value and will otherwise
+     just drop the whole declaration, silently falling back to static and breaking the sticky
+     header/column), then plain sticky overrides it on anything newer that understands it. */
+  table.cmp thead th{ font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:1px; text-transform:uppercase; color:var(--ink-dim); border-bottom:1px solid var(--line); cursor:pointer; position:-webkit-sticky; position:sticky; top:0; background:var(--panel); z-index:2; }
   table.cmp thead th:hover{ color:var(--ink); }
   table.cmp thead th.sorted{ color:var(--gold-hi); }
-  table.cmp td.identity, table.cmp th.identity{ position:sticky; left:0; background:var(--panel); z-index:3; border-right:1px solid var(--line); }
+  table.cmp td.identity, table.cmp th.identity{ position:-webkit-sticky; position:sticky; left:0; background:var(--panel); z-index:3; border-right:1px solid var(--line); }
   table.cmp tbody tr{ cursor:pointer; transition:filter .15s ease; }
   table.cmp tbody tr:hover{ filter:brightness(1.55) saturate(1.15); }
   .cmp-player{ display:flex; align-items:center; gap:10px; min-width:170px; }
@@ -122,7 +128,10 @@
 
   .mobile-picker{ display:none; }
   .picker-note{ font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:.5px; text-transform:uppercase; color:var(--ink-dim); margin-bottom:14px; }
-  @media (max-width:720px){
+  /* 600px (not the old 720px) so a phone rotated to landscape -- iPhone SE/6/7/8 land at
+     667px wide, for example -- clears the breakpoint and gets the real scrollable table
+     instead of the stacked picker; portrait phones (~375-430px) still fall under it. */
+  @media (max-width:600px){
     table.cmp{ display:none; }
     .cmp-table-scroll{ border:none; background:transparent; }
     .mobile-picker{ display:block; }
@@ -140,11 +149,16 @@
     .stack-row b{ font-family:'JetBrains Mono',monospace; font-weight:500; }
   }
 
-  #dossier-overlay{ position:fixed; inset:0; background:rgba(6,7,8,0.88); backdrop-filter:blur(6px); z-index:50;
-    display:flex; align-items:flex-start; justify-content:center; overflow-y:auto; padding:40px 16px; touch-action:pan-y; }
+  #dossier-overlay{ position:fixed; inset:0; background:rgba(6,7,8,0.88); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); z-index:50;
+    display:flex; align-items:flex-start; justify-content:center; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:40px 16px; touch-action:pan-y; }
   #dossier-overlay.hidden{ display:none !important; }
+  /* touch-action:pan-y (not none) is required here -- iOS Safari treats touch-action:none as
+     "this element and everything inside it opts out of native scrolling entirely," which is
+     what was silently breaking vertical scroll inside an opened dossier on iOS. pan-y still lets
+     native vertical scrolling happen (the overlay above is the actual scroll container) while
+     leaving horizontal drags free for wireDossierGestures()'s swipe left/right/down handling below. */
   .dossier{ background:var(--panel); border:1px solid var(--line); border-radius:16px; max-width:720px; width:100%;
-    padding:28px; position:relative; opacity:0; transform:translateY(18px) scale(.98); animation:dossierIn .35s ease forwards; overflow:hidden; touch-action:none; }
+    padding:28px; position:relative; opacity:0; transform:translateY(18px) scale(.98); animation:dossierIn .35s ease forwards; overflow:hidden; touch-action:pan-y; }
   @keyframes dossierIn{ to{ opacity:1; transform:translateY(0) scale(1); } }
   .dossier .corner-mark{ position:absolute; bottom:14px; right:16px; max-height:26px; max-width:110px; opacity:.55; object-fit:contain; }
   .dossier .dh-watermark{ position:absolute; left:50%; bottom:-18px; transform:translateX(-50%); width:230px; max-width:55%; opacity:.05; pointer-events:none; z-index:0; }
@@ -546,6 +560,7 @@ function renderHeader(brief, opts){
     ` : ""}
     <div class="prepared">${brief["Prepared By Line"] || "Prepared by Dark Horse Hoops"}</div>
     <h1>${brief["Report Title"] || "Dark Horse Sourcing Board"}</h1>
+    ${brief["Report Date"] ? `<div class="report-date">Report date &nbsp;<b>${brief["Report Date"]}</b></div>` : ""}
     <div class="sub">${[brief["Team"], brief["League"], brief["Country"], brief["Season"]].filter(Boolean).join(" &middot; ")}</div>
     <div class="brief">${brief["Published Brief"] || ""}</div>
     ${brief["Positions Needed"] ? `<div class="positions">TARGETING &nbsp;<b>${brief["Positions Needed"]}</b></div>` : ""}
@@ -929,6 +944,7 @@ const DEMO_BRIEF = {
   "Report Title":"Bonn - Forward Sourcing Board","Team":"Telekom Baskets Bonn","League":"BBL",
   "Country":"Germany","Season":"2026-27","Positions Needed":"Power forward, small-ball 4/5",
   "Published Brief":"Bonn is looking for a switchable power forward who can defend in space and space the floor on offense.",
+  "Report Date":"Sep 27, 2026",
   "Publish":"YES","Branding_Mode":"DARK_HORSE","Prepared By Line":"Prepared by Dark Horse Hoops"
 };
 const DEMO_PLAYERS = [
