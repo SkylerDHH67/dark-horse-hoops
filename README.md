@@ -71,45 +71,39 @@ not just hidden by convention.
 Compare view works differently on purpose: rather than reading whatever columns
 happen to exist, it only ever looks for a small, fixed list of metrics that are
 hardcoded in `board.html` itself (see `BUILT_IN_METRICS` near the top of its
-`<script>`) -- Height, Age, PPG, RPG, APG, FG%. Those six are already present on
-every `Players - Published` tab today, so Compare works on every existing and
-future report with zero Google Sheet changes, ever.
+`<script>`) -- Position, Height, Fit Rating, Level Rating, Risk Level, Budget
+Level, PPG, RPG, APG, 3pt Attempts per game, Stl Rate, Blk Rate. Those first six
+came from columns Skyler added to the live template (M-Q and V-X on
+`Players - Published`); older reports made before those columns existed just
+quietly don't show that metric, nothing breaks.
 
 ## Compare / Heatmap view
 
-Every board can show two views: **Cards** (unchanged) and **Compare**, a data
-heatmap. Compare checks which of the built-in metrics actually have a matching
-column on this report's `Players - Published` data and only shows those -- if a
-report is ever missing one (or all) of them, that metric (or the whole Compare
-toggle) just quietly doesn't appear. Cards always work regardless.
+Every board can show two views: **Cards** (unchanged) and **Compare**, one full
+heatmap table. Compare checks which of the built-in metrics actually have a
+matching column on this report's `Players - Published` data and only shows
+those -- if a report is ever missing one (or all) of them, that metric (or the
+whole Compare toggle) just quietly doesn't appear. Cards always work regardless.
+Every metric the report has data for shows as its own column, all at once --
+there's no tab that splits columns into groups; the position chips above the
+table filter which *players* are shown, which is separate from that. Compare
+sorts by Fit Rating (best first) by default; click any column header to resort.
 
-Each built-in metric has a display name, a category (PHYSICAL, SCORING,
-SHOOTING, PLAYMAKING, REBOUNDING -- these group and order the columns on
-screen), a format (`PERCENT`, `DECIMAL`, `COUNT`, or `FEET_INCHES`, controlling
-how the raw sheet value is displayed), and a direction (`HIGHER_IS_BETTER`,
-`LOWER_IS_BETTER`, or `NEUTRAL` -- neutral is for things like height or age
-where "bigger" isn't automatically "better").
+Each built-in metric has a display name, a format (`PERCENT`, `DECIMAL`,
+`COUNT`, `FEET_INCHES`, `SCALE`, or `CATEGORICAL`, controlling how the raw
+sheet value is displayed and heat-mapped), and a direction (`HIGHER_IS_BETTER`,
+`LOWER_IS_BETTER`, or `NEUTRAL`). `SCALE` is for the four rating columns --
+Gemini may fill them in as a number (any scale) or a word (Low/Medium/High);
+either works for sorting and heat-mapping, and the sheet's literal text is
+always what's actually displayed. `CATEGORICAL` (Position) gets a stable
+per-value color tint instead of a high/low gradient, since one position isn't
+numerically "better" than another. Risk Level and Budget Level are currently
+set to `LOWER_IS_BETTER` (lower risk / lower budget need reads as more
+attractive) -- flip the `direction` on either in `BUILT_IN_METRICS` if that's
+not the read Skyler wants.
 
 There is no sheet-driven config of any kind -- adding or changing a metric means
 editing `BUILT_IN_METRICS` in `board.html`'s code, not touching any spreadsheet.
 
 Real values are always shown (heat intensity is a visual layer on top, computed
-relative to whatever's currently visible -- it never replaces the number).
-Missing data always shows as `—`, never estimated or treated as zero. On mobile,
-Compare becomes a "pick up to 4 players" selector with a stacked comparison,
-rather than a shrunk table.
-
-## Deployment
-
-This site is served by GitHub Pages directly from this repo (Settings -> Pages).
-`CNAME` points it at **darkhorsehoops.net**. DNS for that domain needs an A record
-(apex) pointing at GitHub's Pages IP addresses, set at whichever registrar the
-domain lives at. If Pages ever needs to be reconfigured, that's the one setting
-that matters -- everything else is just static files.
-
-## One placeholder to update
-
-`index.html`'s contact link points to `hello@darkhorsehoops.net`. That inbox
-doesn't necessarily exist yet -- set up an actual mailbox or forwarding rule for
-it (or swap in whatever address you actually want to use) before treating the
-site as fully live.
+relative to whatever's currently visible -- it
