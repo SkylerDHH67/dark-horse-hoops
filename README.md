@@ -127,4 +127,14 @@ and a small "TOP PICK" badge appears on cards (and in the dossier) where
 ## Deployment
 
 This site is served by GitHub Pages directly from this repo (Settings -> Pages).
-`CNAME` points it at **darkhorsehoops.net**. DNS for that dom
+`CNAME` points it at **darkhorsehoops.net**. DNS for that domain needs an A record
+(apex) pointing at GitHub's Pages IP addresses, set at whichever registrar the
+domain lives at. If Pages ever needs to be reconfigured, that's the one setting
+that matters -- everything else is just static files.
+
+## One placeholder to update
+
+`index.html`'s contact link points to `hello@darkhorsehoops.net`. That inbox
+doesn't necessarily exist yet -- set up an actual mailbox or forwarding rule for
+it (or swap in whatever address you actually want to use) before treating the
+site as fully live.
